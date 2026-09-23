@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#00072d">
+  <title>Расписание колледжа</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --navy:#00072d; --island:#001c55; --blue:#0a2472; --accent:#0e6ba8; --pale:#a6e1fa; --red:#ff5555; --orange:#ffaa00; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; min-height:100%; background:var(--navy); color:var(--pale); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+    body { min-height:100vh; overflow-x:hidden; }
+    button, input { font:inherit; }
+    button { color:inherit; cursor:pointer; border:0; }
+    .app { width:min(100%, 440px); min-height:100vh; margin:auto; padding:20px 14px calc(24px + env(safe-area-inset-bottom)); }
+    .screen { display:none; animation:appear .2s ease-out; }
+    .screen.active { display:block; }
+    @keyframes appear { from { opacity:.2; transform:translateY(5px); } to { opacity:1; transform:none; } }
+    h1 { margin:8px 2px 22px; font-size:24px; line-height:1.15; letter-spacing:-.4px; color:#e3f7ff; }
+    h2 { margin:0; font-size:18px; color:#e3f7ff; }
+    .island { background:rgba(0,28,85,.7); border:1px solid rgba(166,225,250,.2); border-radius:24px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+    .welcome { margin-top:24vh; }
+    .welcome h1 { text-align:center; font-size:28px; margin-bottom:28px; }
+    .input-wrap { position:relative; }
+    .field { width:100%; padding:15px 19px; border-radius:50px; border:1px solid rgba(166,225,250,.25); outline:none; color:#e3f7ff; background:rgba(0,7,45,.42); transition:.2s; }
+    .field::placeholder { color:rgba(166,225,250,.55); }
+    .field:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(14,107,168,.18); }
+    .suggestions { position:absolute; z-index:10; bottom:calc(100% + 10px); left:0; right:0; max-height:200px; overflow-y:auto; padding:7px; border-radius:20px; background:rgba(0,28,85,.96); border:1px solid rgba(166,225,250,.25); box-shadow:0 7px 25px rgba(0,0,0,.25); }
+    .suggestions:empty { display:none; }
+    .suggestion { width:100%; padding:11px 13px; border-radius:14px; background:transparent; text-align:left; color:var(--pale); }
+    .suggestion:hover, .suggestion:focus { background:var(--blue); outline:none; }
+    .hint, .micro { color:rgba(166,225,250,.58); font-size:12px; }
+    .hint { text-align:center; margin:13px 0; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:4px 0 5px; }
+    .topbar h1 { margin:0; font-size:20px; flex:1; text-align:center; }
+    .ghost-btn, .round-btn { background:rgba(0,28,85,.7); border:1px solid rgba(166,225,250,.2); }
+    .ghost-btn { padding:10px 14px; border-radius:50px; font-size:13px; white-space:nowrap; }
+    .round-btn { flex:0 0 40px; width:40px; height:40px; border-radius:50%; font-size:20px; }
+    .ghost-btn:hover, .round-btn:hover, .tool-card:hover { background:var(--blue); }
+    .group-label { text-align:center; font-size:12px; color:rgba(166,225,250,.62); margin:8px 0 12px; }
+    .day-arc { position:relative; height:105px; margin:4px -8px 5px; overflow:hidden; }
+    .day-arc::after { content:""; position:absolute; left:13%; right:13%; bottom:-52px; height:112px; border-top:1px solid rgba(166,225,250,.13); border-radius:50%; pointer-events:none; }
+    .day-btn { position:absolute; bottom:23px; left:50%; width:46px; height:34px; padding:0; border-radius:16px; background:transparent; color:rgba(166,225,250,.58); font-size:12px; transition:transform .22s, background .22s, color .22s; transform-origin:50% 110%; }
+    .day-btn:nth-child(1){ transform:translateX(-50%) translateX(-135px) rotate(-25deg); }
+    .day-btn:nth-child(2){ transform:translateX(-50%) translateX(-81px) rotate(-15deg); }
+    .day-btn:nth-child(3){ transform:translateX(-50%) translateX(-39px) rotate(-7deg); }
+    .day-btn:nth-child(4){ transform:translateX(-50%) translateX(39px) rotate(7deg); }
+    .day-btn:nth-child(5){ transform:translateX(-50%) translateX(81px) rotate(15deg); }
+    .day-btn:nth-child(6){ transform:translateX(-50%) translateX(135px) rotate(25deg); }
+    .day-btn.selected { z-index:2; color:#fff; background:var(--accent); transform:translateX(-50%) translateY(-7px) scale(1.08) rotate(0deg); box-shadow:0 0 0 4px rgba(14,107,168,.14); }
+    .status { min-height:38px; display:flex; align-items:center; justify-content:center; padding:8px 12px; margin:1px 0 11px; border-radius:16px; background:rgba(0,28,85,.38); font-size:13px; text-align:center; }
+    .status.going { color:var(--red); } .status.next { color:var(--orange); } .status.none { color:rgba(166,225,250,.65); }
+    .schedule-card { overflow:hidden; min-height:80px; }
+    .lesson { display:grid; grid-template-columns:84px minmax(0,1fr) 48px; align-items:center; gap:8px; min-height:66px; padding:9px 13px; border-bottom:1px solid rgba(166,225,250,.13); }
+    .lesson:last-child { border-bottom:0; }
+    .lesson.current { background:rgba(14,107,168,.42); }
+    .time { font-size:11px; line-height:1.45; color:rgba(166,225,250,.68); }
+    .time strong { display:block; color:var(--pale); font-size:13px; }
+    .subject { min-width:0; font-size:14px; line-height:1.28; color:#edfaff; overflow-wrap:anywhere; }
+    .room { text-align:right; font-size:13px; color:var(--pale); }
+    .empty { padding:33px 10px; text-align:center; font-size:14px; color:rgba(166,225,250,.57); }
+    .updated { display:block; text-align:center; margin:14px 0 0; color:rgba(166,225,250,.48); font-size:11px; }
+    .error { display:none; margin:10px 0; padding:10px 13px; border-radius:15px; color:#ffd3d3; background:rgba(130,20,35,.45); border:1px solid rgba(255,100,100,.25); font-size:12px; }
+    .error.visible { display:block; }
+    .loader { width:20px; height:20px; margin:25px auto; border:2px solid rgba(166,225,250,.23); border-top-color:var(--pale); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .tools { display:grid; gap:12px; margin-top:22px; }
+    .tool-card { width:100%; padding:18px 18px; border-radius:25px; background:rgba(0,28,85,.7); border:1px solid rgba(166,225,250,.2); text-align:left; color:#e3f7ff; font-weight:600; transition:.2s; }
+    .tool-card span { display:block; margin-top:5px; color:rgba(166,225,250,.55); font-size:12px; font-weight:400; }
+    .panel { margin-top:14px; padding:15px; }
+    .panel-title { margin:0 0 12px; font-size:14px; color:#e3f7ff; }
+    .control-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    select.field { appearance:none; }
+    .action { width:100%; padding:13px; margin-top:10px; border-radius:50px; background:var(--accent); color:white; font-weight:600; }
+    .action:hover { background:#1688c9; }
+    .room-list, .subject-results { display:grid; gap:7px; margin-top:13px; }
+    .room-item, .result-item { padding:11px 13px; border-radius:14px; background:rgba(10,36,114,.55); font-size:13px; }
+    .room-list { grid-template-columns:repeat(3,1fr); }
+    .room-item { text-align:center; color:#e3f7ff; }
+    .result-item strong { color:#e3f7ff; }
+    .result-item small { display:block; margin-top:3px; color:rgba(166,225,250,.62); }
+    .back-row { display:flex; justify-content:flex-end; }
+    @media (max-width:370px) { .app { padding-left:10px; padding-right:10px; } .day-btn:nth-child(1){transform:translateX(-50%) translateX(-125px) rotate(-25deg)} .day-btn:nth-child(6){transform:translateX(-50%) translateX(125px) rotate(25deg)} .lesson{grid-template-columns:77px minmax(0,1fr) 42px;padding-left:10px;padding-right:10px} }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="screen-group" class="screen">
+      <div class="welcome">
+        <h1>Расписание</h1>
+        <div class="input-wrap">
+          <input id="group-input" class="field" type="text" autocomplete="off" placeholder="Введите группу..." aria-label="Группа">
+          <div id="group-suggestions" class="suggestions" role="listbox"></div>
+        </div>
+        <p class="hint">Выберите свою группу из списка</p>
+        <div id="group-error" class="error"></div>
+      </div>
+    </section>
+
+    <section id="screen-schedule" class="screen">
+      <div class="topbar">
+        <button id="change-group" class="ghost-btn">← Группа</button>
+        <h1>Расписание</h1>
+        <button id="open-search" class="round-btn" aria-label="Поиск">⌕</button>
+      </div>
+      <div id="group-label" class="group-label"></div>
+      <nav id="day-arc" class="day-arc" aria-label="Дни недели"></nav>
+      <div id="pair-status" class="status none">Пар нет</div>
+      <div id="schedule-error" class="error"></div>
+      <div id="schedule-loader" class="loader" hidden></div>
+      <div id="schedule-card" class="schedule-card island"></div>
+      <span id="updated" class="updated">Обновлено: —</span>
+    </section>
+
+    <section id="screen-search" class="screen">
+      <div class="back-row"><button id="close-search" class="round-btn" aria-label="Назад">←</button></div>
+      <h1 style="margin-top:12px">Поиск</h1>
+      <div class="tools">
+        <button id="rooms-tool" class="tool-card">Свободные аудитории<span>Найти свободный кабинет</span></button>
+        <button id="teachers-tool" class="tool-card">Преподаватели<span>Раздел в разработке</span></button>
+        <button id="subjects-tool" class="tool-card">По предметам<span>В каких группах проходит предмет</span></button>
+      </div>
+      <div id="search-panel" class="panel island" hidden></div>
+      <div id="search-error" class="error"></div>
+    </section>
+  </main>
+
+  <script>
+    const API = '/api';
+    const DAYS = ['ПН','ВТ','СР','ЧТ','ПТ','СБ'];
+    const DAY_TYPES = { ПН:'monday', ВТ:'weekday', СР:'weekday', ЧТ:'weekday', ПТ:'weekday', СБ:'saturday' };
+    let groups = [], selectedDay = 'ПН', schedule = [], pairTimes = {};
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    function showScreen(name) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); $('screen-' + name).classList.add('active'); }
+    function message(id, text) { const el=$(id); el.textContent=text || ''; el.classList.toggle('visible', !!text); }
+    async function getJSON(path) { const response = await fetch(API + path); if (!response.ok) throw new Error('Ошибка сервера (' + response.status + ')'); return response.json(); }
+    function dayFromDate() { const n=new Date().getDay(); return n >= 1 && n <= 6 ? DAYS[n-1] : null; }
+    function setupTelegram() { try { if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } } catch (_) {} }
+
+    async function loadGroups() {
+      try { const data=await getJSON('/groups'); groups=Array.isArray(data.groups) ? data.groups : []; }
+      catch (e) { message('group-error','Не удалось загрузить список групп. Попробуйте ещё раз.'); }
+    }
+    function renderSuggestions() {
+      const query=$('group-input').value.trim().toLowerCase();
+      const found=groups.filter(g => g.toLowerCase().includes(query)).slice(0,100);
+      $('group-suggestions').innerHTML=found.map(g => `<button class="suggestion" role="option" data-group="${esc(g)}">${esc(g)}</button>`).join('');
+    }
+    function chooseGroup(group) { localStorage.setItem('selectedGroup',group); $('group-input').value=group; $('group-suggestions').innerHTML=''; openSchedule(); }
+    async function openSchedule() {
+      const group=localStorage.getItem('selectedGroup'); if (!group) { showScreen('group'); return; }
+      $('group-label').textContent=group; showScreen('schedule');
+      const today=dayFromDate(); selectedDay=today || 'ПН'; renderDays(); await loadSchedule();
+    }
+    function renderDays() { $('day-arc').innerHTML=DAYS.map(d => `<button class="day-btn ${d===selectedDay?'selected':''}" data-day="${d}" aria-pressed="${d===selectedDay}">${d}</button>`).join(''); }
+    async function loadSchedule() {
+      const group=localStorage.getItem('selectedGroup'); $('schedule-loader').hidden=false; message('schedule-error','');
+      $('schedule-card').innerHTML='';
+      try {
+        const [scheduleData,timeData]=await Promise.all([
+          getJSON('/schedule?group='+encodeURIComponent(group)+'&day='+encodeURIComponent(selectedDay)).catch(e => e.message.includes('(404)') ? {lessons:[]} : Promise.reject(e)),
+          getJSON('/pair_times?day_type='+DAY_TYPES[selectedDay])
+        ]);
+        schedule=scheduleData.lessons || []; pairTimes=timeData.times || {}; renderLessons(); updateStatus();
+      } catch(e) { schedule=[]; pairTimes={}; $('schedule-card').innerHTML='<div class="empty">Не удалось загрузить расписание</div>'; message('schedule-error','Не удалось загрузить данные. Проверьте соединение.'); }
+      finally { $('schedule-loader').hidden=true; loadUpdated(); }
+    }
+    function renderLessons() {
+      if (!schedule.length) { $('schedule-card').innerHTML='<div class="empty">Пар нет</div>'; return; }
+      $('schedule-card').innerHTML=schedule.map(lesson => `<div class="lesson" data-pair="${esc(lesson.pair)}"><div class="time"><strong>${esc(lesson.pair)} пара</strong><span class="pair-range">—</span></div><div class="subject">${esc(lesson.subject)}</div><div class="room">${esc(lesson.room || '—')}</div></div>`).join('');
+      Object.keys(pairTimes).forEach(pair => { const t=pairTimes[pair] && pairTimes[pair][0]; const row=document.querySelector(`.lesson[data-pair="${CSS.escape(pair)}"] .pair-range`); if(row && t) row.textContent=esc(t.start)+'–'+esc(t.end); });
+    }
+    function minutes(value) { const [h,m]=String(value).split(':').map(Number); return h*60+m; }
+    function updateStatus() {
+      const status=$('pair-status'); status.className='status none'; status.textContent='Пар нет';
+      if (selectedDay !== dayFromDate()) return;
+      const now=new Date().getHours()*60+new Date().getMinutes(); let next=null, active=null;
+      Object.entries(pairTimes).forEach(([pair, list]) => { const t=list && list[0]; if(!t)return; const start=minutes(t.start), end=minutes(t.end); if(now>=start && now<end) active={pair,start,end}; else if(start>now && (!next || start<next.start)) next={pair,start}; });
+      document.querySelectorAll('.lesson').forEach(x=>x.classList.toggle('current', active && x.dataset.pair==active.pair));
+      if(active) { status.className='status going'; status.textContent=`Идёт ${active.pair}-я пара, осталось ${active.end-now} мин`; }
+      else if(next) { status.className='status next'; status.textContent=`Следующая пара через ${next.start-now} мин`; }
+    }
+    async function loadUpdated() { try { const d=await getJSON('/last_update'); $('updated').textContent='Обновлено: '+(d.updated_between || d.message || '—'); } catch (_) { $('updated').textContent='Обновление недоступно'; } }
+
+    function showRoomsPanel() {
+      $('search-panel').hidden=false; $('search-panel').innerHTML=`<p class="panel-title">Свободные аудитории</p><div class="control-row"><select id="room-day" class="field">${DAYS.map(d=>`<option value="${d}" ${d===selectedDay?'selected':''}>${d}</option>`).join('')}</select><select id="room-pair" class="field">${[1,2,3,4,5,6].map(n=>`<option value="${n}">${n} пара</option>`).join('')}</select></div><button id="find-rooms" class="action">Показать кабинеты</button><div id="room-results"></div>`;
+      $('find-rooms').onclick=async()=>{ const out=$('room-results'); out.innerHTML='<div class="loader"></div>'; try { const d=await getJSON('/free_rooms?day='+encodeURIComponent($('room-day').value)+'&pair='+$('room-pair').value); out.innerHTML=d.free_rooms?.length?'<div class="room-list">'+d.free_rooms.map(r=>`<div class="room-item">${esc(r)}</div>`).join('')+'</div>':'<div class="empty">Свободных кабинетов нет</div>'; } catch(e) { out.innerHTML='<div class="empty">Не удалось загрузить кабинеты</div>'; } };
+    }
+    function showSubjectPanel() { $('search-panel').hidden=false; $('search-panel').innerHTML=`<p class="panel-title">Поиск по предмету</p><input id="subject-input" class="field" placeholder="Например, Математика"><button id="find-subject" class="action">Найти группы</button><div id="subject-results"></div>`; $('find-subject').onclick=searchSubject; }
+    async function searchSubject() { const value=$('subject-input').value.trim(), out=$('subject-results'); if(!value)return; out.innerHTML='<div class="loader"></div>'; try { const d=await getJSON('/combined_classes?subject='+encodeURIComponent(value)+'&day_week='+encodeURIComponent(selectedDay)); out.innerHTML=d.groups?.length?'<div class="subject-results">'+d.groups.map(x=>`<div class="result-item"><strong>${esc(x.group_name)}</strong><small>${esc(x.day_of_week)} · ${esc(x.pair_number)} пара · ${esc(x.room)}</small></div>`).join('')+'</div>':'<div class="empty">Ничего не найдено</div>'; } catch(e) { out.innerHTML='<div class="empty">Не удалось выполнить поиск</div>'; } }
+
+    $('group-input').addEventListener('input',renderSuggestions);
+    $('group-input').addEventListener('focus',renderSuggestions);
+    $('group-suggestions').addEventListener('click',e=>{ const b=e.target.closest('[data-group]'); if(b)chooseGroup(b.dataset.group); });
+    $('change-group').onclick=()=>{ localStorage.removeItem('selectedGroup'); $('group-input').value=''; showScreen('group'); renderSuggestions(); };
+    $('open-search').onclick=()=>showScreen('search'); $('close-search').onclick=()=>showScreen('schedule');
+    $('day-arc').addEventListener('click',e=>{ const b=e.target.closest('[data-day]'); if(b){ selectedDay=b.dataset.day; renderDays(); loadSchedule(); } });
+    $('rooms-tool').onclick=showRoomsPanel; $('teachers-tool').onclick=()=>{ $('search-panel').hidden=false; $('search-panel').innerHTML='<div class="empty">Раздел в разработке</div>'; }; $('subjects-tool').onclick=showSubjectPanel;
+    setInterval(updateStatus,30000);
+    (async function init(){ setupTelegram(); if(localStorage.getItem('selectedGroup')) await openSchedule(); else { showScreen('group'); await loadGroups(); } })();
+  </script>
+</body>
+</html>
