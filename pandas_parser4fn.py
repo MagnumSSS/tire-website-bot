@@ -59,6 +59,7 @@ def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id):
 
     # флаг для проверки повторяющихся пар, у которых нет номера кабинета
     prev_room = None
+    prev_subject = None # прошлая пара, для сравнения с нынешней
 
     # Только для отладки?
     #print(f"Расписание в группе {group_name} в {day_week}: ")
@@ -77,21 +78,23 @@ def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id):
 
         # Проверка кабинета пары
         room = data.iloc[2]
+        subject = data.iloc[1]  # Получаем текущий предмет
+
         if pd.isna(room):
-            if prev_room is not None:
+            if prev_room is not None and prev_subject == subject:
                 room = prev_room # Используем кабинет из предыдущей строки
             else:
-                room = "Отсутствует"
+                room = "..."
         else:
             prev_room = room # Запоминаем текущий кабинет для следующих строк
-
+            prev_subject = subject # и запоминаем предмет
         # print(f"  [INSERT] pair={pair}, subject='{data.iloc[1]}', room='{room}'")
 
         cursor.execute("""
             INSERT OR REPLACE INTO schedule 
             (group_name, day_of_week, pair_number, subject, room, run_id) 
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (group_name, day_week, pair, data.iloc[1], room, run_id))
+        """, (group_name, day_week, pair, subject, room, run_id))
 
         # print(f"  [DEBUG] cursor.rowcount = {cursor.rowcount}")
 

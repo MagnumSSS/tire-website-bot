@@ -13,6 +13,7 @@ def ini_db():
             )
         """)
 
+        # основное бд йоу
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS schedule (
                 run_id INTEGER,
@@ -24,6 +25,19 @@ def ini_db():
                 UNIQUE(group_name, day_of_week, pair_number)
             );
         """)
+
+        # бд клон, для старого расписания
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS schedule_snapshot (
+                group_name TEXT NOT NULL,
+                pair_number INTEGER NOT NULL,
+                day_of_week TEXT NOT NULL,
+                subject TEXT,
+                room TEXT,
+                UNIQUE(group_name, day_of_week, pair_number)
+            );
+        """)
+
         # id INTEGER PRIMARY KEY AUTOINCREMENT - означает, что бд будет сама придумывать уникальный id
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS parser_runs ( 

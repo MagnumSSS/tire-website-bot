@@ -10,10 +10,19 @@ parser_n1.ini_parser_groups()
 # заполняем расписание
 add_time.init_times()
 
+
 with sqlite3.connect('data/schedule.db') as conn:
     # создаем курсор
     cursor = conn.cursor()
 
+    # Сохраняем текущее расписание как снапшот
+    cursor.execute("DELETE FROM schedule_snapshot")
+    cursor.execute("""
+        INSERT INTO schedule_snapshot 
+        SELECT group_name, pair_number, day_of_week, subject, room 
+        FROM schedule
+    """)
+    conn.commit()
 
     # 1. Читаем все группы из БД
     cursor.execute("SELECT group_name, file_path FROM groups")
