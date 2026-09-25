@@ -794,11 +794,30 @@
                 if (response.ok) {
                     const data = await response.json();
                     const footer = document.getElementById('footer');
-                    if (footer) {
-                        footer.textContent = data.updated_between ? `Обновлено: ${data.updated_between}` : (data.message || 'Обновлено: -');
-                    }
+                    if (footer) footer.textContent = formatLastUpdate(data);
                 }
             } catch (error) { console.error(error); }
+        }
+
+        // Умный футер: сегодня -> просто время, вчера -> "вчера", иначе -> дата
+        function formatLastUpdate(data) {
+            if (data.start_time && data.end_time) {
+                const start = new Date(data.start_time.replace(' ', 'T'));
+                const end = new Date(data.end_time.replace(' ', 'T'));
+                if (!isNaN(start) && !isNaN(end)) {
+                    const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                    const now = new Date();
+                    const dayStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                    const dayToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const diff = Math.round((dayToday - dayStart) / 86400000);
+                    let prefix = '';
+                    if (diff === 1) prefix = 'вчера ';
+                    else if (diff !== 0) prefix = `${String(start.getDate()).padStart(2, '0')}.${String(start.getMonth() + 1).padStart(2, '0')} `;
+                    return `Обновлено: ${prefix}${hm(start)} - ${hm(end)}`;
+                }
+            }
+            if (data.updated_between) return `Обновлено: ${data.updated_between}`;
+            return data.message || 'Обновлено: -';
         }
 
         // ===================== SCREEN 3: SEARCH =====================

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from database import get_db
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel
 from typing import List
@@ -111,11 +111,14 @@ def get_last_update():
     # row["start_time"] и row["end_time"] будут строками вида "2024-01-15 14:00:00"
     # Нам нужно отрезать секунды и оставить только часы и минуты (например, "14:00")
     
-    start_time = row["start_time"][11:16] # Берем с 11 по 16 символ (ЧЧ:ММ)
-    end_time = row["end_time"][11:16]
-    
+    # SQLite CURRENT_TIMESTAMP пишет UTC -> переводим в локальное время машины
+    start = datetime.fromisoformat(row["start_time"]).replace(tzinfo=timezone.utc).astimezone()
+    end = datetime.fromisoformat(row["end_time"]).replace(tzinfo=timezone.utc).astimezone()
+
     return {
-        "updated_between": f"{start_time} - {end_time}"
+        "updated_between": f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}",
+        "start_time": start.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 # выдача расписания по дням
