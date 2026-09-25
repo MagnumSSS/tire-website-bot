@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from database import get_db
+from datetime import datetime
 
 from pydantic import BaseModel
 from typing import List
@@ -335,3 +336,8 @@ def check_changes(
 
     # if diff_count > 0, значит есть отличия
     return{"has_changes": diff_count > 0}
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "timestamp": datetime.now().isoformat()}
