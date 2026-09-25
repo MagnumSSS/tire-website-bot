@@ -218,11 +218,18 @@ def get_free_rooms(
 # совмещенки
 @app.get("/api/combined_classes")
 def get_combined_classes(
-    subject: str = Query(...),
+    subject: Optional[str] = Query(None), # теперь тоже опционально
     day_week: str = Query(...),
     pair_num: Optional[str] = Query(None), # опциональный 
     room: Optional[str] = Query(None) # опциональный 
-):  
+):      
+    # ВАЛИДАЦИЯ: хотя бы один из subject или room должен быть передан
+    if not subject and not room:
+        raise HTTPException(
+            status_code=400, 
+            detail="Нужно указать хотя бы предмет или кабинет"
+        )
+    
     # ЧТО ПРОСИМ(SELECT)
     # У КОГО ПРОСИМ(FROM)
     # СУЖАЕМ ПОИСК ПО УСЛОВИЮ, теперь не просто строгое: = ?, а похожее: LIKE ?
@@ -230,18 +237,34 @@ def get_combined_classes(
     query = """
         SELECT group_name, day_of_week, pair_number, subject, room
         FROM schedule
-        WHERE subject LIKE ? AND day_of_week = ?
+        WHERE day_of_week = ?
     """
-    params = [f"%{subject}%", day_week]
+    params = [day_week]
+
+    # Логика: (предмет ИЛИ кабинет) + день
+    # Если переданы оба - ищем по обоим через OR
+    # Если только один - ищем только по нему
+
+    conditions = []
 
     # Добавляем условие, если параметр передан
+
+    if subject:
+        conditions.append("subject LIKE ?")
+        params.append(f"%{subject}%")
+
+    if room:
+        conditions.append("room LIKE ?")
+        params.append(f"%{room}%")
+    
+    # Объединяем условия через OR
+    if conditions:
+        query += " AND (" + " OR ".join(conditions) + ")"
+    
+    # Добавляем опциональный фильтр по паре
     if pair_num is not None:
         query += " AND pair_number = ?"
         params.append(pair_num)
-
-    if room is not None:
-        query += " AND room = ?"
-        params.append(room)
 
     query += " ORDER BY group_name, day_of_week, pair_number "
     
@@ -252,6 +275,63 @@ def get_combined_classes(
     conn.close()
 
     return {
-        "query": subject,
+        "query": subject or room,
         "groups": [dict(row) for row in rows]
     }
+
+
+# api для старого расписани
+
+@app.get("/api/schedule_snapshot")
+def get_schedule_snapshot(
+    group: str = Query(..., description="Название группы"),
+    day: str = Query(..., description="День недели")
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT pair_number AS pair, subject, room 
+        FROM schedule_snapshot
+        WHERE group_name = ? AND day_of_week = ?
+        ORDER BY pair_number ASC
+    """, (group, day)) # в функции передаем group, day и в зависимости от данных, отдаем нужное расписание
+
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        raise HTTPException(status_code=404, detail="Снапшот не найден")
+    
+    return {
+        "group": group,
+        "day": day,
+        "lessons": [dict(row) for row in rows]
+    }
+
+@app.get("/api/has_changes")
+def check_changes(
+    group: str = Query(...),
+    day: str = Query(...)
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Ищем строки, которые есть в текущем расписании, но отсутствуют в снапшоте
+    cursor.execute("""
+        SELECT COUNT(*) FROM (
+            SELECT group_name, pair_number, day_of_week, subject, room 
+            FROM schedule 
+            WHERE group_name = ? AND day_of_week = ?
+            EXCEPT
+            SELECT group_name, pair_number, day_of_week, subject, room 
+            FROM schedule_snapshot 
+            WHERE group_name = ? AND day_of_week = ?
+        )
+    """, (group, day, group, day))
+
+    diff_count = cursor.fetchone()[0]
+    conn.close()
+
+    # if diff_count > 0, значит есть отличия
+    return{"has_changes": diff_count > 0}

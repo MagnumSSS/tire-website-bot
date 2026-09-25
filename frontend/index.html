@@ -16,15 +16,10 @@
             --muted: #a8a8c9;
             --glass: rgba(255,255,255,0.08);
             --line: rgba(255,255,255,0.1);
-            color-scheme: dark; /* FIX 4: нативные контролы (селекты) тёмные */
+            color-scheme: dark;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -32,7 +27,6 @@
             color: var(--white);
             min-height: 100vh;
             overflow-x: hidden;
-            position: relative;
         }
 
         body::before {
@@ -42,639 +36,165 @@
             background: 
                 radial-gradient(circle at 20% 30%, rgba(184,41,221,0.15) 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, rgba(255,51,102,0.15) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(108,92,231,0.08) 0%, transparent 60%),
                 linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
             z-index: -1;
         }
 
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 20px;
-            padding-bottom: 40px;
-        }
+        .container { max-width: 480px; margin: 0 auto; padding: 20px 20px 40px; }
 
-        /* ===================== HEADER ===================== */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 35px;
-            gap: 15px;
-            min-height: 56px;
-        }
+        /* HEADER */
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 35px; gap: 15px; min-height: 56px; }
+        .btn-back { width: 56px; height: 56px; border-radius: 50%; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); color: var(--white); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; flex-shrink: 0; }
+        .btn-back:active { background: rgba(255,255,255,0.15); transform: scale(0.95); }
+        .header-title { font-size: 24px; font-weight: 700; flex: 1; text-align: center; }
+        .btn-search { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--pink), var(--violet)); border: none; color: var(--white); font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(255,51,102,0.3); flex-shrink: 0; }
+        .btn-search:active { transform: scale(0.95); }
+        .header-spacer { width: 56px; height: 56px; flex-shrink: 0; }
 
-        .btn-back {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            color: var(--white);
-            font-size: 22px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
+        /* GROUP SCREEN */
+        .group-screen { min-height: 78vh; display: flex; flex-direction: column; justify-content: center; }
+        .group-screen .header { margin-bottom: 45px; }
 
-        .btn-back:active {
-            background: rgba(255,255,255,0.15);
-            transform: scale(0.95);
-        }
+        /* INPUTS */
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-field { width: 100%; height: 56px; padding: 0 20px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; color: var(--white); font-size: 16px; transition: all 0.3s ease; font-family: inherit; }
+        .input-field::placeholder { color: var(--muted); }
+        .input-field:focus { outline: none; border-color: var(--pink); box-shadow: 0 0 20px rgba(255,51,102,0.2); }
+        .dropdown { position: absolute; left: 0; right: 0; bottom: calc(100% + 10px); max-height: 210px; overflow-y: auto; background: rgba(45,27,78,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; padding: 10px; display: none; z-index: 100; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); scrollbar-width: thin; scrollbar-color: rgba(184,41,221,0.6) transparent; }
+        .dropdown::-webkit-scrollbar { width: 5px; }
+        .dropdown::-webkit-scrollbar-thumb { background: rgba(184,41,221,0.6); border-radius: 3px; }
+        .dropdown.show { display: block; }
+        .dropdown-item { padding: 14px 15px; border-radius: 12px; cursor: pointer; color: var(--white); font-size: 15px; transition: all 0.2s ease; }
+        .dropdown-item:hover { background: rgba(255,255,255,0.1); }
 
-        .header-title {
-            font-size: 24px;
+        .group-name { text-align: center; color: var(--muted); font-size: 12px; margin-bottom: 25px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* DAY PICKER */
+        .day-picker { position: relative; height: 90px; margin-bottom: 35px; }
+        .day-frame { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 120px; height: 60px; border: 2px solid var(--pink); border-radius: 20px; box-shadow: 0 0 30px rgba(255,51,102,0.5); z-index: 10; pointer-events: none; }
+        .day-scroll { display: flex; overflow-x: auto; scroll-snap-type: x proximity; padding: 0 calc(50% - 60px); gap: 20px; height: 100%; align-items: center; scrollbar-width: none; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-overflow-scrolling: touch; }
+        .day-scroll.dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; }
+        .day-scroll::-webkit-scrollbar { display: none; }
+        .day-item { flex: 0 0 auto; scroll-snap-align: center; padding: 16px 25px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; color: var(--white); font-size: 14px; font-weight: 500; opacity: 0.35; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; min-width: 80px; pointer-events: none; }
+        .day-item.active { opacity: 1; font-size: 18px; font-weight: 700; background: rgba(255,255,255,0.08); border-color: rgba(255,51,102,0.3); transform: scale(1.05); }
+
+        /* STATUS BAR */
+        .status-bar { min-height: 48px; padding: 14px 20px; border-radius: 17px; text-align: center; font-size: 14px; font-weight: 600; margin-bottom: 25px; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+        .status-bar.going { background: linear-gradient(135deg, rgba(255,51,102,0.3), rgba(184,41,221,0.2)); border: 1px solid var(--pink); }
+        .status-bar.soon { background: rgba(255,165,0,0.15); border: 1px solid rgba(255,165,0,0.5); color: #ffa500; }
+        .status-bar.empty, .status-bar.neutral { background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--muted); }
+
+        /* LESSON CARDS */
+        .lessons { display: flex; flex-direction: column; gap: 20px; margin-bottom: 35px; }
+        .lesson { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; padding: 25px; display: grid; grid-template-columns: 90px 1fr 70px; gap: 15px; min-height: 125px; transition: all 0.3s ease; align-items: center; }
+        .lesson.current { background: linear-gradient(115deg, rgba(255,51,102,0.3), rgba(184,41,221,0.27)); border-color: var(--pink); box-shadow: 0 0 25px rgba(255,51,102,0.2); animation: pulse 2.2s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 25px rgba(255,51,102,0.2); } 50% { box-shadow: 0 0 40px rgba(255,51,102,0.4); } }
+        .lesson-time { display: flex; flex-direction: column; gap: 4px; }
+        .lesson-time strong { font-size: 14px; font-weight: 700; }
+        .lesson-time span { font-size: 12px; color: var(--muted); line-height: 1.3; }
+        .lesson-subject { display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3; padding: 0 5px; }
+        .lesson-room { display: flex; align-items: center; justify-content: center; }
+        .room-badge { background: linear-gradient(135deg, var(--violet), var(--indigo)); padding: 8px 14px; border-radius: 12px; font-size: 14px; font-weight: 600; text-align: center; white-space: nowrap; }
+
+        /* ======= НОВОЕ: КАРТОЧКА СОБЫТИЯ (ВПР и т.п.) ======= */
+        .event-card {
+            background: linear-gradient(135deg, rgba(255,165,0,0.22), rgba(255,51,102,0.18));
+            border: 1px solid rgba(255,165,0,0.45);
+            border-radius: 17px;
+            padding: 28px 22px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(255,165,0,0.15);
+        }
+        .event-label {
+            font-size: 11px;
             font-weight: 700;
-            flex: 1;
-            text-align: center;
-            letter-spacing: -0.3px;
-        }
-
-        .btn-search {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--pink), var(--violet));
-            border: none;
-            color: var(--white);
-            font-size: 26px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(255,51,102,0.3);
-            flex-shrink: 0;
-            font-weight: 300;
-        }
-
-        .btn-search:active {
-            transform: scale(0.95);
-            box-shadow: 0 0 30px rgba(255,51,102,0.5);
-        }
-
-        .header-spacer {
-            width: 56px;
-            height: 56px;
-            flex-shrink: 0;
-        }
-
-        /* ============ FIX 1: ЭКРАН ГРУППЫ ПО ЦЕНТРУ ============ */
-        .group-screen {
-            min-height: 78vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .group-screen .header {
-            margin-bottom: 45px;
-        }
-
-        /* ===================== INPUTS ===================== */
-        .input-group {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        .input-field {
-            width: 100%;
-            height: 56px;
-            padding: 0 20px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-            color: var(--white);
-            font-size: 16px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .input-field::placeholder {
-            color: var(--muted);
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--pink);
-            box-shadow: 0 0 20px rgba(255,51,102,0.2);
-        }
-
-        .dropdown {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: calc(100% + 10px);
-            max-height: 210px;
-            overflow-y: auto;
-            background: rgba(45,27,78,0.97);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-            padding: 10px;
-            display: none;
-            z-index: 100;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-            /* FIX 1: аккуратный скроллбар вместо белого */
-            scrollbar-width: thin;
-            scrollbar-color: rgba(184,41,221,0.6) transparent;
-        }
-
-        .dropdown::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .dropdown::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .dropdown::-webkit-scrollbar-thumb {
-            background: rgba(184,41,221,0.6);
-            border-radius: 3px;
-        }
-
-        .dropdown.show {
-            display: block;
-        }
-
-        .dropdown-item {
-            padding: 14px 15px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--white);
-            font-size: 15px;
-        }
-
-        .dropdown-item:active,
-        .dropdown-item:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        /* ===================== GROUP NAME ===================== */
-        .group-name {
-            text-align: center;
-            color: var(--muted);
-            font-size: 12px;
-            margin-bottom: 25px;
-            letter-spacing: 0.5px;
+            color: #ffa500;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
             text-transform: uppercase;
         }
-
-        /* ===================== DAY PICKER ===================== */
-        .day-picker {
-            position: relative;
-            height: 90px;
-            margin-bottom: 35px;
-        }
-
-        .day-frame {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 120px;
-            height: 60px;
-            border: 2px solid var(--pink);
-            border-radius: 20px;
-            box-shadow: 0 0 30px rgba(255,51,102,0.5);
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        /* FIX 2: свободный прокрут — proximity вместо mandatory + drag */
-        .day-scroll {
-            display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x proximity;
-            padding: 0 calc(50% - 60px);
-            gap: 20px;
-            height: 100%;
-            align-items: center;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            cursor: grab;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .day-scroll.dragging {
-            cursor: grabbing;
-            scroll-snap-type: none;
-            scroll-behavior: auto;
-        }
-
-        .day-scroll::-webkit-scrollbar {
-            display: none;
-        }
-
-        .day-item {
-            flex: 0 0 auto;
-            scroll-snap-align: center;
-            padding: 16px 25px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-            color: var(--white);
-            font-size: 14px;
-            font-weight: 500;
-            opacity: 0.35;
-            transition: all 0.3s ease;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 80px;
-            letter-spacing: 0.5px;
-            pointer-events: none; /* дни не кликабельны, только свайп */
-        }
-
-        .day-item.active {
-            opacity: 1;
+        .event-title {
             font-size: 18px;
             font-weight: 700;
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(255,51,102,0.3);
-            transform: scale(1.05);
-        }
-
-        /* ===================== STATUS BAR ===================== */
-        .status-bar {
-            min-height: 48px;
-            padding: 14px 20px;
-            border-radius: 17px;
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 25px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .status-bar.going {
-            background: linear-gradient(135deg, rgba(255,51,102,0.3), rgba(184,41,221,0.2));
-            border: 1px solid var(--pink);
             color: var(--white);
+            margin-bottom: 6px;
         }
-
-        .status-bar.soon {
-            background: rgba(255,165,0,0.15);
-            border: 1px solid rgba(255,165,0,0.5);
-            color: #ffa500;
-        }
-
-        .status-bar.empty {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--line);
-            color: var(--muted);
-        }
-
-        /* ===================== LESSON CARDS ===================== */
-        .lessons {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 35px;
-        }
-
-        .lesson {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-            padding: 25px;
-            display: grid;
-            grid-template-columns: 90px 1fr 70px;
-            gap: 15px;
-            min-height: 125px;
-            transition: all 0.3s ease;
-            align-items: center;
-        }
-
-        .lesson.current {
-            background: linear-gradient(115deg, rgba(255,51,102,0.3), rgba(184,41,221,0.27));
-            border-color: var(--pink);
-            box-shadow: 0 0 25px rgba(255,51,102,0.2);
-            animation: pulse 2.2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 25px rgba(255,51,102,0.2); }
-            50% { box-shadow: 0 0 40px rgba(255,51,102,0.4); }
-        }
-
-        .lesson-time {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .lesson-time strong {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--white);
-        }
-
-        .lesson-time span {
+        .event-rooms {
             font-size: 12px;
             color: var(--muted);
-            line-height: 1.3;
+            margin-top: 8px;
         }
 
-        .lesson-subject {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 600;
-            text-align: center;
-            line-height: 1.3;
-            padding: 0 5px;
-        }
-
-        .lesson-room {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .room-badge {
-            background: linear-gradient(135deg, var(--violet), var(--indigo));
-            padding: 8px 14px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        /* ===================== FOOTER ===================== */
-        .footer {
-            text-align: center;
-            color: var(--muted);
-            font-size: 11px;
-            padding: 20px 0;
-            letter-spacing: 0.3px;
-        }
-
-        /* ===================== PLACEHOLDER ===================== */
-        .placeholder {
-            text-align: center;
-            padding: 50px 20px;
-            color: var(--muted);
-            font-size: 15px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-        }
-
-        /* ===================== SEARCH TABS ===================== */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-
-        .tab {
-            flex: 1;
+        /* ======= НОВОЕ: КНОПКИ ПРЕДЫДУЩЕЙ ВЕРСИИ ======= */
+        .snapshot-section { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .btn-snapshot {
+            width: 100%;
             height: 48px;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            background: transparent;
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .tab.active {
-            background: linear-gradient(135deg, var(--pink), var(--violet));
-            color: var(--white);
-            border-color: transparent;
-            box-shadow: 0 0 20px rgba(255,51,102,0.3);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .tab-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .tab-description {
-            color: var(--muted);
-            font-size: 13px;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .select-field {
-            width: 100%;
-            height: 56px;
-            padding: 0 20px;
             background: var(--glass);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-            color: var(--white);
-            font-size: 16px;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            font-family: inherit;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a8a8c9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 20px center;
-        }
-
-        .select-field:focus {
-            outline: none;
-            border-color: var(--pink);
-        }
-
-        /* FIX 4: опции в нативном списке — тёмный фон, белый текст */
-        .select-field option {
-            background-color: #2d1b4e;
-            color: #ffffff;
-            padding: 12px;
-        }
-
-        .btn-primary {
-            width: 100%;
-            height: 56px;
-            background: linear-gradient(135deg, var(--pink), var(--violet));
-            border: none;
-            border-radius: 17px;
-            color: var(--white);
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(255,51,102,0.3);
-            font-family: inherit;
-            margin-top: 10px;
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-            box-shadow: 0 0 30px rgba(255,51,102,0.5);
-        }
-
-        /* ===================== ROOMS GRID ===================== */
-        .rooms-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 25px;
-        }
-
-        .room-card {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
+            border: 1px solid var(--pink);
             border-radius: 14px;
-            padding: 16px;
-            text-align: center;
+            color: var(--white);
             font-size: 14px;
             font-weight: 600;
+            cursor: pointer;
             transition: all 0.3s ease;
+            font-family: inherit;
         }
-
-        .room-card:active {
-            background: rgba(255,255,255,0.12);
-        }
-
-        /* ===================== RESULTS TABLE ===================== */
-        .results-table {
-            width: 100%;
-            margin-top: 25px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 17px;
-            overflow: hidden;
-            overflow-x: auto;
-        }
-
-        .results-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .results-table th,
-        .results-table td {
-            padding: 13px 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--line);
+        .btn-snapshot:active { background: rgba(255,51,102,0.18); transform: scale(0.98); }
+        .btn-snapshot:disabled { opacity: 0.5; cursor: wait; }
+        .snapshot-banner {
+            background: rgba(255,51,102,0.15);
+            border: 1px solid var(--pink);
+            border-radius: 12px;
+            padding: 10px 15px;
+            text-align: center;
             font-size: 13px;
-        }
-
-        .results-table th {
-            background: rgba(255,255,255,0.05);
-            font-weight: 600;
             color: var(--muted);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
 
-        .results-table tr:last-child td {
-            border-bottom: none;
-        }
+        .footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px 0; letter-spacing: 0.3px; }
+        .placeholder { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 15px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; }
 
-        .results-table td {
-            color: var(--white);
-        }
+        /* TABS & SEARCH */
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; }
+        .tab { flex: 1; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: inherit; }
+        .tab.active { background: linear-gradient(135deg, var(--pink), var(--violet)); color: var(--white); border-color: transparent; box-shadow: 0 0 20px rgba(255,51,102,0.3); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+        .tab-description { color: var(--muted); font-size: 13px; margin-bottom: 25px; line-height: 1.5; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .select-field { width: 100%; height: 56px; padding: 0 20px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; color: var(--white); font-size: 16px; cursor: pointer; appearance: none; -webkit-appearance: none; font-family: inherit; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a8a8c9' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 20px center; }
+        .select-field:focus { outline: none; border-color: var(--pink); }
+        .select-field option { background-color: #2d1b4e; color: #ffffff; padding: 12px; }
+        .btn-primary { width: 100%; height: 56px; background: linear-gradient(135deg, var(--pink), var(--violet)); border: none; border-radius: 17px; color: var(--white); font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 0 20px rgba(255,51,102,0.3); font-family: inherit; margin-top: 10px; }
+        .btn-primary:active { transform: scale(0.98); }
+        .rooms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 25px; }
+        .room-card { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-align: center; font-size: 14px; font-weight: 600; }
+        .results-table { width: 100%; margin-top: 25px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; overflow: hidden; overflow-x: auto; }
+        .results-table table { width: 100%; border-collapse: collapse; }
+        .results-table th, .results-table td { padding: 13px 10px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; }
+        .results-table th { background: rgba(255,255,255,0.05); font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .results-table tr:last-child td { border-bottom: none; }
+        .results-table td { color: var(--white); }
 
-        /* ===================== SPINNER ===================== */
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-top-color: var(--pink);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ===================== RESPONSIVE ===================== */
         @media (max-width: 370px) {
-            .container { padding: 15px; }
-
-            .lesson {
-                grid-template-columns: 80px 1fr 60px;
-                padding: 20px;
-                gap: 10px;
-                min-height: 110px;
-            }
-
+            .container { padding: 15px 15px 30px; }
+            .lesson { grid-template-columns: 80px 1fr 60px; padding: 20px; gap: 10px; min-height: 110px; }
             .lesson-time strong { font-size: 13px; }
             .lesson-time span { font-size: 11px; }
             .lesson-subject { font-size: 14px; }
-
-            .room-badge {
-                font-size: 12px;
-                padding: 6px 10px;
-            }
-
+            .room-badge { font-size: 12px; padding: 6px 10px; }
             .header-title { font-size: 20px; }
-
             .tab { font-size: 11px; height: 44px; }
-
-            .results-table th,
-            .results-table td {
-                padding: 10px 6px;
-                font-size: 11px;
-            }
-
-            .rooms-grid { gap: 10px; }
-            .room-card { padding: 12px; font-size: 13px; }
+            .results-table th, .results-table td { padding: 10px 6px; font-size: 11px; }
+            .event-title { font-size: 16px; }
         }
 
         @media (max-width: 320px) {
@@ -688,15 +208,9 @@
     <script>
         // ===================== CONFIG =====================
         const API_BASE = 'http://localhost:8000';
-        const DAY_TYPES = {
-            'ПН': 'monday',
-            'ВТ': 'weekday',
-            'СР': 'weekday',
-            'ЧТ': 'weekday',
-            'ПТ': 'weekday',
-            'СБ': 'saturday'
-        };
+        const DAY_TYPES = { 'ПН': 'monday', 'ВТ': 'weekday', 'СР': 'weekday', 'ЧТ': 'weekday', 'ПТ': 'weekday', 'СБ': 'saturday' };
         const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+        const EGG_CODE = 'Руслан_67'; // пасхалка для друга
 
         // ===================== STATE =====================
         let currentGroup = localStorage.getItem('selectedGroup');
@@ -704,6 +218,12 @@
         let groups = [];
         let pairTimes = {};
         let statusInterval = null;
+
+        // ======= НОВОЕ: состояние для снапшота =======
+        let currentLessons = [];      // актуальное расписание
+        let snapshotLessons = null;   // предыдущее расписание (null если не загружено)
+        let hasChanges = false;       // есть ли изменения
+        let isViewingSnapshot = false; // смотрим ли мы сейчас снапшот
 
         // ===================== TELEGRAM INIT =====================
         if (window.Telegram && window.Telegram.WebApp) {
@@ -731,38 +251,62 @@
             return div.innerHTML;
         }
 
-        // ============ FIX 2: СВОБОДНЫЙ ПРОКРУТ (drag + wheel) ============
-        function enableFreeScroll(el) {
-            let isDown = false;
-            let startX = 0;
-            let startScroll = 0;
+        // ======= НОВОЕ: склонение слова "пара" =======
+        function pluralizePairs(n) {
+            const mod10 = n % 10, mod100 = n % 100;
+            if (mod10 === 1 && mod100 !== 11) return `${n} пара`;
+            if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return `${n} пары`;
+            return `${n} пар`;
+        }
 
+        // ======= НОВОЕ: парсинг события типа "ВПР 12:30" =======
+        function parseEvent(subject) {
+            if (!subject) return { isEvent: false };
+            const match = subject.match(/^(.+?)\s+(\d{1,2}:\d{2})$/);
+            if (match) {
+                return { isEvent: true, name: match[1].trim(), time: match[2] };
+            }
+            return { isEvent: false };
+        }
+
+        // ======= НОВОЕ: группируем события и отделяем их от обычных пар =======
+        function processLessons(lessons) {
+            const events = {};
+            const normal = [];
+
+            lessons.forEach(lesson => {
+                const ev = parseEvent(lesson.subject);
+                if (ev.isEvent) {
+                    const key = `${ev.name}|${ev.time}`;
+                    if (!events[key]) {
+                        events[key] = { name: ev.name, time: ev.time, pairs: [], rooms: new Set() };
+                    }
+                    events[key].pairs.push(lesson.pair);
+                    if (lesson.room && lesson.room !== 'Отсутствует' && lesson.room !== 'с/з') {
+                        events[key].rooms.add(lesson.room);
+                    }
+                } else {
+                    normal.push(lesson);
+                }
+            });
+
+            return { normal, events: Object.values(events) };
+        }
+
+        // Свободный прокрут
+        function enableFreeScroll(el) {
+            let isDown = false, startX = 0, startScroll = 0;
             el.addEventListener('pointerdown', (e) => {
-                if (e.pointerType !== 'mouse') return; // тач и так свайпается нативно
+                if (e.pointerType !== 'mouse') return;
                 isDown = true;
                 startX = e.clientX;
                 startScroll = el.scrollLeft;
                 el.classList.add('dragging');
                 el.setPointerCapture(e.pointerId);
             });
-
-            el.addEventListener('pointermove', (e) => {
-                if (!isDown) return;
-                el.scrollLeft = startScroll - (e.clientX - startX);
-            });
-
-            el.addEventListener('pointerup', () => {
-                if (!isDown) return;
-                isDown = false;
-                el.classList.remove('dragging');
-            });
-
-            el.addEventListener('pointercancel', () => {
-                isDown = false;
-                el.classList.remove('dragging');
-            });
-
-            // колесо мыши → горизонтальный скролл
+            el.addEventListener('pointermove', (e) => { if (isDown) el.scrollLeft = startScroll - (e.clientX - startX); });
+            el.addEventListener('pointerup', () => { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('pointercancel', () => { isDown = false; el.classList.remove('dragging'); });
             el.addEventListener('wheel', (e) => {
                 if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) {
                     e.preventDefault();
@@ -773,8 +317,11 @@
 
         // ===================== SCREEN 1: GROUP SELECTION =====================
         function renderGroupSelection() {
+            isViewingSnapshot = false;
+            snapshotLessons = null;
+            hasChanges = false;
+
             const app = document.getElementById('app');
-            // FIX 1: экран по центру, панель не липнет к верху
             app.innerHTML = `
                 <div class="group-screen">
                     <div class="header">
@@ -792,66 +339,49 @@
             const input = document.getElementById('groupInput');
             const dropdown = document.getElementById('groupDropdown');
 
-            input.addEventListener('focus', () => {
-                filterGroups(input.value.toLowerCase().trim());
-            });
-
-            input.addEventListener('input', () => {
-                filterGroups(input.value.toLowerCase().trim());
-            });
+            input.addEventListener('focus', () => filterGroups(input.value.toLowerCase().trim()));
+            input.addEventListener('input', () => filterGroups(input.value.toLowerCase().trim()));
 
             function filterGroups(query) {
                 const filtered = query.length > 0
                     ? groups.filter(g => g.toLowerCase().includes(query)).slice(0, 80)
                     : groups.slice(0, 80);
-
                 if (filtered.length > 0) {
-                    dropdown.innerHTML = filtered.map(g => `
-                        <div class="dropdown-item" data-group="${escapeHtml(g)}">${escapeHtml(g)}</div>
-                    `).join('');
-                    dropdown.classList.add('show');
+                    dropdown.innerHTML = filtered.map(g => `<div class="dropdown-item" data-group="${escapeHtml(g)}">${escapeHtml(g)}</div>`).join('');
                 } else {
                     dropdown.innerHTML = '<div class="dropdown-item" style="color: var(--muted);">Группа не найдена</div>';
-                    dropdown.classList.add('show');
                 }
+                dropdown.classList.add('show');
             }
 
             dropdown.addEventListener('click', (e) => {
                 const item = e.target.closest('.dropdown-item');
                 if (item && item.dataset.group) {
-                    const group = item.dataset.group;
-                    localStorage.setItem('selectedGroup', group);
-                    currentGroup = group;
+                    localStorage.setItem('selectedGroup', item.dataset.group);
+                    currentGroup = item.dataset.group;
                     renderSchedule();
                 }
             });
 
             input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const val = input.value.trim();
-                    if (groups.includes(val)) {
-                        localStorage.setItem('selectedGroup', val);
-                        currentGroup = val;
-                        renderSchedule();
-                    }
+                if (e.key === 'Enter' && groups.includes(input.value.trim())) {
+                    localStorage.setItem('selectedGroup', input.value.trim());
+                    currentGroup = input.value.trim();
+                    renderSchedule();
                 }
             });
 
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.input-group')) {
-                    dropdown.classList.remove('show');
-                }
+                if (!e.target.closest('.input-group')) dropdown.classList.remove('show');
             });
-
-            // БЕЗ автофокуса — панель не открывается сама при загрузке
         }
 
         // ===================== SCREEN 2: SCHEDULE =====================
         function renderSchedule() {
-            if (statusInterval) {
-                clearInterval(statusInterval);
-                statusInterval = null;
-            }
+            if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+            isViewingSnapshot = false;
+            snapshotLessons = null;
+            hasChanges = false;
 
             const app = document.getElementById('app');
             app.innerHTML = `
@@ -860,19 +390,16 @@
                     <h1 class="header-title">Расписание</h1>
                     <button class="btn-search" id="btnSearch">\u2315</button>
                 </div>
-                <div class="group-name" id="groupNameLabel">${escapeHtml(currentGroup)}</div>
+                <div class="group-name">${escapeHtml(currentGroup)}</div>
                 <div class="day-picker">
                     <div class="day-frame"></div>
                     <div class="day-scroll" id="dayScroll">
-                        ${DAYS.map(day => `
-                            <div class="day-item ${day === currentDay ? 'active' : ''}" data-day="${day}">${day}</div>
-                        `).join('')}
+                        ${DAYS.map(day => `<div class="day-item ${day === currentDay ? 'active' : ''}" data-day="${day}">${day}</div>`).join('')}
                     </div>
                 </div>
                 <div class="status-bar empty" id="statusBar">Загрузка...</div>
-                <div class="lessons" id="lessonsList">
-                    <div class="placeholder"><span class="spinner"></span></div>
-                </div>
+                <div class="lessons" id="lessonsList"><div class="placeholder"><span class="spinner"></span></div></div>
+                <div id="snapshotControls"></div>
                 <div class="footer" id="footer">Обновлено: -</div>
             `;
 
@@ -885,118 +412,191 @@
             document.getElementById('btnSearch').addEventListener('click', renderSearch);
 
             const dayScroll = document.getElementById('dayScroll');
-            enableFreeScroll(dayScroll); // FIX 2
-
-            let scrollTimeout;
+            enableFreeScroll(dayScroll);
 
             setTimeout(() => {
                 const activeDay = dayScroll.querySelector('.day-item.active');
                 if (activeDay) {
-                    const scrollLeft = activeDay.offsetLeft - (dayScroll.offsetWidth - activeDay.offsetWidth) / 2;
-                    dayScroll.scrollTo({ left: scrollLeft, behavior: 'auto' });
+                    const sl = activeDay.offsetLeft - (dayScroll.offsetWidth - activeDay.offsetWidth) / 2;
+                    dayScroll.scrollTo({ left: sl, behavior: 'auto' });
                 }
             }, 150);
 
+            let scrollTimeout;
             dayScroll.addEventListener('scroll', () => {
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
                     const items = dayScroll.querySelectorAll('.day-item');
                     const center = dayScroll.scrollLeft + dayScroll.offsetWidth / 2;
-
-                    let closestDay = currentDay;
-                    let minDistance = Infinity;
-
+                    let closest = currentDay, minDist = Infinity;
                     items.forEach(item => {
-                        const itemCenter = item.offsetLeft + item.offsetWidth / 2;
-                        const distance = Math.abs(center - itemCenter);
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestDay = item.dataset.day;
-                        }
+                        const d = Math.abs(center - (item.offsetLeft + item.offsetWidth / 2));
+                        if (d < minDist) { minDist = d; closest = item.dataset.day; }
                     });
-
-                    if (closestDay !== currentDay) {
-                        currentDay = closestDay;
-                        items.forEach(item => {
-                            item.classList.toggle('active', item.dataset.day === currentDay);
-                        });
-                        loadPairTimes().then(() => {
-                            loadSchedule();
-                        });
+                    if (closest !== currentDay) {
+                        currentDay = closest;
+                        items.forEach(item => item.classList.toggle('active', item.dataset.day === currentDay));
+                        isViewingSnapshot = false;
+                        snapshotLessons = null;
+                        loadFull();
                     }
                 }, 100);
             });
 
-            loadPairTimes().then(() => {
-                loadSchedule();
-            });
+            loadFull();
             loadLastUpdate();
 
-            statusInterval = setInterval(() => {
-                updateStatusBar();
-            }, 30000);
+            statusInterval = setInterval(updateStatusBar, 30000);
         }
 
-        // ===================== LOAD SCHEDULE =====================
-        async function loadSchedule() {
-            const lessonsList = document.getElementById('lessonsList');
-            lessonsList.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
+        // ======= НОВОЕ: загружаем всё сразу (пары + has_changes) параллельно =======
+        async function loadFull() {
+            await loadPairTimes();
+            // Запросы расписания и проверки изменений — параллельно
+            const [scheduleRes, changesRes] = await Promise.allSettled([
+                fetch(`${API_BASE}/api/schedule?group=${encodeURIComponent(currentGroup)}&day=${encodeURIComponent(currentDay)}`),
+                fetch(`${API_BASE}/api/has_changes?group=${encodeURIComponent(currentGroup)}&day=${encodeURIComponent(currentDay)}`)
+            ]);
 
-            try {
-                const response = await fetch(`${API_BASE}/api/schedule?group=${encodeURIComponent(currentGroup)}&day=${encodeURIComponent(currentDay)}`);
+            // Расписание
+            if (scheduleRes.status === 'fulfilled' && scheduleRes.value.ok) {
+                const data = await scheduleRes.value.json();
+                currentLessons = data.lessons || [];
+            } else {
+                currentLessons = [];
+            }
 
-                if (!response.ok) {
-                    lessonsList.innerHTML = '<div class="placeholder">Расписание не найдено</div>';
-                    updateStatusBar();
-                    return;
-                }
+            // Изменения
+            if (changesRes.status === 'fulfilled' && changesRes.value.ok) {
+                const ch = await changesRes.value.json();
+                hasChanges = !!ch.has_changes;
+            } else {
+                hasChanges = false;
+            }
 
-                const data = await response.json();
+            isViewingSnapshot = false;
+            snapshotLessons = null;
 
-                if (!data.lessons || data.lessons.length === 0) {
-                    lessonsList.innerHTML = '<div class="placeholder">На этот день пар нет</div>';
-                    updateStatusBar();
-                    return;
-                }
+            renderLessons();
+            renderSnapshotControls();
+            updateStatusBar();
+        }
 
-                lessonsList.innerHTML = data.lessons.map(lesson => {
-                    const times = pairTimes[lesson.pair] || [];
-                    const time1 = times[0] || {};
-                    const time2 = times[1] || {};
+        // ======= НОВОЕ: рендер списка уроков (с учётом событий и снапшота) =======
+        function renderLessons() {
+            const list = document.getElementById('lessonsList');
+            const lessonsToShow = isViewingSnapshot ? (snapshotLessons || []) : currentLessons;
 
-                    const timeStr1 = time1.start && time1.end ? `${time1.start}\u2013${time1.end}` : '\u2014';
-                    const timeStr2 = time2.start && time2.end ? `${time2.start}\u2013${time2.end}` : '\u2014';
+            if (!lessonsToShow || lessonsToShow.length === 0) {
+                list.innerHTML = '<div class="placeholder">На этот день пар нет</div>';
+                return;
+            }
 
-                    const isCurrent = checkCurrentLesson(lesson.pair);
+            const { normal, events } = processLessons(lessonsToShow);
 
-                    return `
-                        <div class="lesson ${isCurrent ? 'current' : ''}">
-                            <div class="lesson-time">
-                                <strong>${lesson.pair} пара</strong>
-                                <span>${escapeHtml(timeStr1)}</span>
-                                <span>${escapeHtml(timeStr2)}</span>
-                            </div>
-                            <div class="lesson-subject">${escapeHtml(lesson.subject)}</div>
-                            <div class="lesson-room">
-                                <div class="room-badge">${escapeHtml(lesson.room)}</div>
-                            </div>
+            let html = '';
+
+            // События (одна карточка на всё мероприятие)
+            events.forEach(ev => {
+                const roomsStr = ev.rooms.size > 0 ? Array.from(ev.rooms).join(', ') : '';
+                html += `
+                    <div class="event-card">
+                        <div class="event-label">\u26A1 событие</div>
+                        <div class="event-title">У вас сегодня ${escapeHtml(ev.name)} с ${escapeHtml(ev.time)}</div>
+                        ${roomsStr ? `<div class="event-rooms">Кабинеты: ${escapeHtml(roomsStr)}</div>` : ''}
+                    </div>
+                `;
+            });
+
+            // Обычные пары
+            normal.forEach(lesson => {
+                const times = pairTimes[lesson.pair] || [];
+                const t1 = times[0] || {}, t2 = times[1] || {};
+                const ts1 = t1.start && t1.end ? `${t1.start}\u2013${t1.end}` : '\u2014';
+                const ts2 = t2.start && t2.end ? `${t2.start}\u2013${t2.end}` : '\u2014';
+
+                // Подсвечиваем текущую пару только когда НЕ смотрим снапшот
+                const isCurrent = !isViewingSnapshot && checkCurrentLesson(lesson.pair);
+
+                html += `
+                    <div class="lesson ${isCurrent ? 'current' : ''}">
+                        <div class="lesson-time">
+                            <strong>${lesson.pair} пара</strong>
+                            <span>${escapeHtml(ts1)}</span>
+                            <span>${escapeHtml(ts2)}</span>
                         </div>
-                    `;
-                }).join('');
+                        <div class="lesson-subject">${escapeHtml(lesson.subject)}</div>
+                        <div class="lesson-room">
+                            <div class="room-badge">${escapeHtml(lesson.room)}</div>
+                        </div>
+                    </div>
+                `;
+            });
 
-                updateStatusBar();
-            } catch (error) {
-                console.error('Ошибка загрузки расписания:', error);
-                lessonsList.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
+            list.innerHTML = html;
+        }
+
+        // ======= НОВОЕ: рендер кнопок предыдущей версии =======
+        function renderSnapshotControls() {
+            const container = document.getElementById('snapshotControls');
+            if (!container) return;
+
+            if (isViewingSnapshot) {
+                // Смотрим снапшот — кнопка возврата
+                container.innerHTML = `
+                    <div class="snapshot-section">
+                        <div class="snapshot-banner">Показана предыдущая версия расписания</div>
+                        <button class="btn-snapshot" id="btnShowCurrent">Вернуться к текущему</button>
+                    </div>
+                `;
+                document.getElementById('btnShowCurrent').addEventListener('click', () => {
+                    isViewingSnapshot = false;
+                    renderLessons();
+                    renderSnapshotControls();
+                    updateStatusBar();
+                });
+            } else if (hasChanges) {
+                // Есть изменения — кнопка "Показать предыдущую"
+                container.innerHTML = `
+                    <div class="snapshot-section">
+                        <button class="btn-snapshot" id="btnShowSnapshot">Показать предыдущую версию</button>
+                    </div>
+                `;
+                document.getElementById('btnShowSnapshot').addEventListener('click', loadSnapshot);
+            } else {
+                container.innerHTML = '';
             }
         }
 
-        // ===================== CURRENT LESSON CHECK =====================
+        // ======= НОВОЕ: загрузка снапшота =======
+        async function loadSnapshot() {
+            const btn = document.getElementById('btnShowSnapshot');
+            if (btn) { btn.disabled = true; btn.textContent = 'Загрузка...'; }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/schedule_snapshot?group=${encodeURIComponent(currentGroup)}&day=${encodeURIComponent(currentDay)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    snapshotLessons = data.lessons || [];
+                    isViewingSnapshot = true;
+                    renderLessons();
+                    renderSnapshotControls();
+                    updateStatusBar();
+                } else {
+                    // 404 — снапшота ещё нет
+                    alert('Предыдущая версия ещё не сохранена');
+                    if (btn) { btn.disabled = false; btn.textContent = 'Показать предыдущую версию'; }
+                }
+            } catch (err) {
+                console.error(err);
+                if (btn) { btn.disabled = false; btn.textContent = 'Показать предыдущую версию'; }
+            }
+        }
+
         function checkCurrentLesson(pair) {
             if (!pairTimes[pair]) return false;
-
+            if (currentDay !== getCurrentDay()) return false; // подсветка только для СЕГОДНЯ
             const now = new Date().getHours() * 60 + new Date().getMinutes();
-
             for (let time of pairTimes[pair]) {
                 const start = minutes(time.start);
                 const end = minutes(time.end);
@@ -1005,21 +605,31 @@
             return false;
         }
 
-        // ===================== STATUS BAR =====================
+        // ======= ИСПРАВЛЕНО: таймер только для сегодня =======
         function updateStatusBar() {
             const statusBar = document.getElementById('statusBar');
             if (!statusBar) return;
 
-            const now = new Date().getHours() * 60 + new Date().getMinutes();
+            const today = getCurrentDay();
+            const isToday = currentDay === today && !isViewingSnapshot;
 
-            let active = null;
-            let next = null;
+            // Если не сегодня (или смотрим снапшот) — только счётчик пар
+            if (!isToday) {
+                const lessonsToShow = isViewingSnapshot ? (snapshotLessons || []) : currentLessons;
+                const count = (lessonsToShow || []).length;
+                statusBar.className = 'status-bar neutral';
+                statusBar.textContent = count > 0 ? pluralizePairs(count) : 'Пар нет';
+                return;
+            }
+
+            // Сегодня — показываем таймер
+            const now = new Date().getHours() * 60 + new Date().getMinutes();
+            let active = null, next = null;
 
             Object.entries(pairTimes).forEach(([pair, timeList]) => {
                 timeList.forEach(t => {
                     const start = minutes(t.start);
                     const end = minutes(t.end);
-
                     if (now >= start && now < end) {
                         active = { pair: parseInt(pair), end };
                     } else if (start > now && (!next || start < next.start)) {
@@ -1035,12 +645,12 @@
                 statusBar.className = 'status-bar soon';
                 statusBar.textContent = `Следующая пара через ${next.start - now} мин`;
             } else {
+                const count = (currentLessons || []).length;
                 statusBar.className = 'status-bar empty';
-                statusBar.textContent = 'На данный момент пар нет';
+                statusBar.textContent = count > 0 ? `${pluralizePairs(count)} сегодня` : 'На данный момент пар нет';
             }
         }
 
-        // ===================== LOAD PAIR TIMES =====================
         async function loadPairTimes() {
             try {
                 const dayType = DAY_TYPES[currentDay] || 'weekday';
@@ -1049,12 +659,9 @@
                     const data = await response.json();
                     pairTimes = data.times || {};
                 }
-            } catch (error) {
-                console.error('Ошибка загрузки времени пар:', error);
-            }
+            } catch (error) { console.error(error); }
         }
 
-        // ===================== LOAD LAST UPDATE =====================
         async function loadLastUpdate() {
             try {
                 const response = await fetch(`${API_BASE}/api/last_update`);
@@ -1062,26 +669,15 @@
                     const data = await response.json();
                     const footer = document.getElementById('footer');
                     if (footer) {
-                        if (data.updated_between) {
-                            footer.textContent = `Обновлено: ${data.updated_between}`;
-                        } else if (data.message) {
-                            footer.textContent = data.message;
-                        } else {
-                            footer.textContent = 'Обновлено: -';
-                        }
+                        footer.textContent = data.updated_between ? `Обновлено: ${data.updated_between}` : (data.message || 'Обновлено: -');
                     }
                 }
-            } catch (error) {
-                console.error('Ошибка загрузки времени обновления:', error);
-            }
+            } catch (error) { console.error(error); }
         }
 
         // ===================== SCREEN 3: SEARCH =====================
         function renderSearch() {
-            if (statusInterval) {
-                clearInterval(statusInterval);
-                statusInterval = null;
-            }
+            if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
 
             const app = document.getElementById('app');
             app.innerHTML = `
@@ -1095,38 +691,30 @@
                     <button class="tab" data-tab="subjects">Предметы</button>
                     <button class="tab" data-tab="teachers">Преподаватели</button>
                 </div>
-
                 <div class="tab-content active" id="tab-rooms">
                     <h2 class="tab-title">Свободные аудитории</h2>
                     <p class="tab-description">Показывает свободные кабинеты в указанное время</p>
                     <div class="form-group">
                         <label class="form-label">День</label>
-                        <select class="select-field" id="freeRoomsDay">
-                            ${DAYS.map(day => `<option value="${day}" ${day === currentDay ? 'selected' : ''}>${day}</option>`).join('')}
-                        </select>
+                        <select class="select-field" id="freeRoomsDay">${DAYS.map(d => `<option value="${d}" ${d === currentDay ? 'selected' : ''}>${d}</option>`).join('')}</select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Пара</label>
-                        <select class="select-field" id="freeRoomsPair">
-                            ${[1,2,3,4,5,6].map(p => `<option value="${p}">${p} пара</option>`).join('')}
-                        </select>
+                        <select class="select-field" id="freeRoomsPair">${[1,2,3,4,5,6].map(p => `<option value="${p}">${p} пара</option>`).join('')}</select>
                     </div>
                     <button class="btn-primary" id="btnFindRooms">Найти свободные кабинеты</button>
                     <div id="roomsResult"></div>
                 </div>
-
                 <div class="tab-content" id="tab-subjects">
                     <h2 class="tab-title">Поиск групп по предмету</h2>
-                    <p class="tab-description">Показывает все группы, у которых есть указанный предмет в выбранный день</p>
+                    <p class="tab-description">Показывает все группы, у которых есть указанный предмет или кабинет в выбранный день</p>
                     <div class="form-group">
-                        <label class="form-label">Название предмета</label>
+                        <label class="form-label">Предмет (необязательно)</label>
                         <input type="text" class="input-field" id="subjectName" placeholder="Например: Математика">
                     </div>
                     <div class="form-group">
                         <label class="form-label">День</label>
-                        <select class="select-field" id="subjectDay">
-                            ${DAYS.map(day => `<option value="${day}" ${day === currentDay ? 'selected' : ''}>${day}</option>`).join('')}
-                        </select>
+                        <select class="select-field" id="subjectDay">${DAYS.map(d => `<option value="${d}" ${d === currentDay ? 'selected' : ''}>${d}</option>`).join('')}</select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Пара (необязательно)</label>
@@ -1142,18 +730,13 @@
                     <button class="btn-primary" id="btnFindSubjects">Найти группы</button>
                     <div id="subjectsResult"></div>
                 </div>
-
                 <div class="tab-content" id="tab-teachers">
                     <div class="placeholder">Поиск расписания преподавателей (в разработке)</div>
                 </div>
             `;
 
             document.getElementById('btnBackFromSearch').addEventListener('click', () => {
-                if (currentGroup) {
-                    renderSchedule();
-                } else {
-                    renderGroupSelection();
-                }
+                if (currentGroup) renderSchedule(); else renderGroupSelection();
             });
 
             document.querySelectorAll('.tab').forEach(tab => {
@@ -1165,36 +748,24 @@
                 });
             });
 
-            // Свободные аудитории
             document.getElementById('btnFindRooms').addEventListener('click', async () => {
                 const day = document.getElementById('freeRoomsDay').value;
                 const pair = document.getElementById('freeRoomsPair').value;
                 const result = document.getElementById('roomsResult');
-
                 result.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
-
                 try {
                     const response = await fetch(`${API_BASE}/api/free_rooms?day=${encodeURIComponent(day)}&pair=${encodeURIComponent(pair)}`);
                     const data = await response.json();
-
                     if (!data.free_rooms || data.free_rooms.length === 0) {
                         result.innerHTML = '<div class="placeholder">Свободных кабинетов не найдено</div>';
                     } else {
-                        result.innerHTML = `
-                            <div class="rooms-grid">
-                                ${data.free_rooms.map(room => `
-                                    <div class="room-card">${escapeHtml(room)}</div>
-                                `).join('')}
-                            </div>
-                        `;
+                        result.innerHTML = `<div class="rooms-grid">${data.free_rooms.map(r => `<div class="room-card">${escapeHtml(r)}</div>`).join('')}</div>`;
                     }
                 } catch (error) {
-                    console.error(error);
                     result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
                 }
             });
 
-            // Совмещенки
             document.getElementById('btnFindSubjects').addEventListener('click', async () => {
                 const subject = document.getElementById('subjectName').value.trim();
                 const day = document.getElementById('subjectDay').value;
@@ -1202,11 +773,11 @@
                 const room = document.getElementById('subjectRoom').value.trim();
                 const result = document.getElementById('subjectsResult');
 
-                if (!subject) {
-                    result.innerHTML = '<div class="placeholder">Введите название предмета</div>';
+                    // Хотя бы один из двух — предмет или кабинет
+                if (!subject && !room) {
+                    result.innerHTML = '<div class="placeholder">Укажите предмет или кабинет (хотя бы одно)</div>';
                     return;
                 }
-
                 result.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
 
                 try {
@@ -1220,19 +791,10 @@
                     if (!data.groups || data.groups.length === 0) {
                         result.innerHTML = '<div class="placeholder">Группы не найдены</div>';
                     } else {
-                        // FIX 3: добавлена колонка КАБИНЕТ
                         result.innerHTML = `
                             <div class="results-table">
                                 <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Группа</th>
-                                            <th>День</th>
-                                            <th>Пара</th>
-                                            <th>Предмет</th>
-                                            <th>Кабинет</th>
-                                        </tr>
-                                    </thead>
+                                    <thead><tr><th>Группа</th><th>День</th><th>Пара</th><th>Предмет</th><th>Кабинет</th></tr></thead>
                                     <tbody>
                                         ${data.groups.map(g => `
                                             <tr>
@@ -1249,7 +811,6 @@
                         `;
                     }
                 } catch (error) {
-                    console.error(error);
                     result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
                 }
             });
@@ -1263,25 +824,14 @@
                     const data = await response.json();
                     groups = data.groups || [];
                 }
-            } catch (error) {
-                console.error('Ошибка загрузки групп:', error);
-                groups = [];
-            }
+            } catch (error) { groups = []; }
         }
 
         // ===================== INIT =====================
         async function init() {
             await loadGroups();
-
-            if (!currentDay) {
-                currentDay = 'ПН';
-            }
-
-            if (currentGroup) {
-                renderSchedule();
-            } else {
-                renderGroupSelection();
-            }
+            if (!currentDay) currentDay = 'ПН';
+            if (currentGroup) renderSchedule(); else renderGroupSelection();
         }
 
         init();
