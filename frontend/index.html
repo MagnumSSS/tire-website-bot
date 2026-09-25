@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Расписание</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="vendor/telegram-web-app.js"></script>
     <style>
         :root {
             --bg: #1a0b2e;
@@ -184,6 +184,90 @@
         .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+                /* ======= EASTER EGG: РУСЛАН_67 ======= */
+        .egg-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 34px;
+            background: linear-gradient(120deg, #ff3b3b, #ff9a3b, #ffe93b, #4bff6b, #3bc9ff, #6b4bff, #d13bff);
+            background-size: 600% 600%;
+            animation: eggRainbow 9s ease infinite;
+            overflow: hidden;
+        }
+        @keyframes eggRainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .egg-back {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.45);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 5;
+        }
+        .egg-title {
+            font-size: 44px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 0 20px;
+            text-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 30px rgba(255,255,255,0.55);
+            animation: eggTitle 2.4s ease-in-out infinite;
+        }
+        @keyframes eggTitle {
+            0%, 100% { transform: scale(1) rotate(-2deg); }
+            50% { transform: scale(1.07) rotate(2deg); }
+        }
+        .egg-stage { display: flex; align-items: flex-end; gap: 26px; }
+        .egg-hand { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        /* каждая рука живёт своей жизнью */
+        .egg-left  { animation: bobA 1.8s ease-in-out infinite; }
+        .egg-right { animation: bobB 2.4s ease-in-out infinite; }
+        @keyframes bobA {
+            0%, 100% { transform: translateY(0) rotate(-3deg); }
+            50%      { transform: translateY(-30px) rotate(2deg); }
+        }
+        @keyframes bobB {
+            0%, 100% { transform: translateY(-22px) rotate(3deg); }
+            50%      { transform: translateY(6px) rotate(-2deg); }
+        }
+        .egg-num {
+            position: relative;
+            font-size: 110px;
+            font-weight: 900;
+            line-height: 1;
+            color: #0d0d0d;
+        }
+        /* белая обводка цифры, как на фотке */
+        .egg-num::before {
+            content: attr(data-n);
+            position: absolute;
+            inset: 0;
+            -webkit-text-stroke: 12px #ffffff;
+            z-index: -1;
+        }
+        .egg-hand svg { width: 160px; height: auto; display: block; }
+        .egg-right svg { transform: scaleX(-1); } /* зеркалим руку */
+        @media (max-width: 370px) {
+            .egg-num { font-size: 84px; }
+            .egg-hand svg { width: 128px; }
+            .egg-title { font-size: 34px; }
+        }
+
         @media (max-width: 370px) {
             .container { padding: 15px 15px 30px; }
             .lesson { grid-template-columns: 80px 1fr 60px; padding: 20px; gap: 10px; min-height: 110px; }
@@ -340,7 +424,10 @@
             const dropdown = document.getElementById('groupDropdown');
 
             input.addEventListener('focus', () => filterGroups(input.value.toLowerCase().trim()));
-            input.addEventListener('input', () => filterGroups(input.value.toLowerCase().trim()));
+            input.addEventListener('input', () => {
+                if (input.value.trim() === EGG_CODE) { renderEasterEgg(); return; }
+                filterGroups(input.value.toLowerCase().trim());
+            });
 
             function filterGroups(query) {
                 const filtered = query.length > 0
@@ -364,7 +451,9 @@
             });
 
             input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && groups.includes(input.value.trim())) {
+                if (e.key !== 'Enter') return;
+                if (input.value.trim() === EGG_CODE) { renderEasterEgg(); return; }
+                if (groups.includes(input.value.trim())) {
                     localStorage.setItem('selectedGroup', input.value.trim());
                     currentGroup = input.value.trim();
                     renderSchedule();
@@ -374,6 +463,43 @@
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.input-group')) dropdown.classList.remove('show');
             });
+        }
+
+                // ===================== EASTER EGG: РУСЛАН_67 =====================
+        function renderEasterEgg() {
+            if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+
+            // рисованная ладонь вверх (SVG, одна на обе руки)
+            const HAND_SVG = `
+                <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M32 152 Q18 124 30 102 Q20 94 15 80 Q10 62 25 57 Q40 52 46 66 Q50 76 57 83 Q67 74 79 77 Q83 58 97 60 Q109 62 108 77 Q113 60 127 62 Q139 64 137 79 Q143 65 155 69 Q165 73 161 85 Q169 77 179 83 Q187 89 181 99 Q191 113 183 129 Q173 149 141 155 Q92 163 32 152 Z"
+                        fill="#ffffff" stroke="#111111" stroke-width="7" stroke-linejoin="round"/>
+                    <path d="M46 66 Q52 78 60 86" fill="none" stroke="#111111" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M108 77 Q105 95 98 104" fill="none" stroke="#111111" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M137 79 Q133 96 126 105" fill="none" stroke="#111111" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M161 85 Q158 99 152 107" fill="none" stroke="#111111" stroke-width="5" stroke-linecap="round"/>
+                </svg>
+            `;
+
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="egg-screen">
+                    <button class="egg-back" id="eggBack">\u2190</button>
+                    <h1 class="egg-title">привет русланчек</h1>
+                    <div class="egg-stage">
+                        <div class="egg-hand egg-left">
+                            <div class="egg-num" data-n="6">6</div>
+                            ${HAND_SVG}
+                        </div>
+                        <div class="egg-hand egg-right">
+                            <div class="egg-num" data-n="7">7</div>
+                            ${HAND_SVG}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('eggBack').addEventListener('click', renderGroupSelection);
         }
 
         // ===================== SCREEN 2: SCHEDULE =====================
