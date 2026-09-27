@@ -563,10 +563,7 @@
             isViewingSnapshot = false;
             snapshotLessons = null;
             hasChanges = false;
-
-            document.getElementById('bellsToggle').addEventListener('click', () => {
-                document.getElementById('bellsSection').classList.toggle('open');
-            });
+            const app = document.getElementById('app');
             app.innerHTML = `
                 <div class="header">
                     <button class="btn-back" id="btnBack">\u2190</button>
@@ -600,6 +597,9 @@
             });
 
             document.getElementById('btnSearch').addEventListener('click', renderSearch);
+            document.getElementById('bellsToggle').addEventListener('click', () => {
+                document.getElementById('bellsSection').classList.toggle('open');
+            });
 
             const dayScroll = document.getElementById('dayScroll');
             enableFreeScroll(dayScroll);
