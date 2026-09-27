@@ -4,3 +4,4 @@ unused_files/
 venv/
 .env
 *.db
+monitor.env
