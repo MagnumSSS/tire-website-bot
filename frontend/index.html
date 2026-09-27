@@ -155,6 +155,60 @@
         }
 
         .footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px 0; letter-spacing: 0.3px; }
+                /* ======= РАСПИСАНИЕ ЗВОНКОВ ======= */
+        .bells-section { margin-bottom: 25px; }
+        .bells-toggle {
+            width: 100%;
+            height: 52px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            color: var(--white);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        .bells-toggle:active { background: rgba(255,255,255,0.12); }
+        .bells-arrow { color: var(--muted); transition: transform 0.3s ease; font-size: 12px; }
+        .bells-section.open .bells-arrow { transform: rotate(180deg); }
+        .bells-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid transparent;
+            border-radius: 15px;
+        }
+        .bells-section.open .bells-list {
+            max-height: 420px;
+            overflow-y: auto;
+            border-color: var(--line);
+            margin-top: 12px;
+            padding: 6px 0;
+        }
+        .bell-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+        .bell-row:last-child { border-bottom: none; }
+        .bell-num { font-size: 14px; font-weight: 700; }
+        .bell-times { display: flex; flex-direction: column; gap: 2px; text-align: right; }
+        .bell-times span { font-size: 12px; color: var(--muted); }
+
+        .footer-changed { color: var(--pink); margin-top: 5px; font-size: 11px; letter-spacing: 0.3px; }
         .placeholder { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 15px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; }
 
         /* TABS & SEARCH */
@@ -308,6 +362,7 @@
         let snapshotLessons = null;   // предыдущее расписание (null если не загружено)
         let hasChanges = false;       // есть ли изменения
         let isViewingSnapshot = false; // смотрим ли мы сейчас снапшот
+        let lastUpdateData = null;     // сырой ответ /api/last_update
 
         // ===================== TELEGRAM INIT =====================
         if (window.Telegram && window.Telegram.WebApp) {
@@ -509,7 +564,9 @@
             snapshotLessons = null;
             hasChanges = false;
 
-            const app = document.getElementById('app');
+            document.getElementById('bellsToggle').addEventListener('click', () => {
+                document.getElementById('bellsSection').classList.toggle('open');
+            });
             app.innerHTML = `
                 <div class="header">
                     <button class="btn-back" id="btnBack">\u2190</button>
@@ -525,6 +582,13 @@
                 </div>
                 <div class="status-bar empty" id="statusBar">Загрузка...</div>
                 <div class="lessons" id="lessonsList"><div class="placeholder"><span class="spinner"></span></div></div>
+                <div class="bells-section" id="bellsSection">
+                    <button class="bells-toggle" id="bellsToggle">
+                        <span id="bellsTitle">Расписание звонков</span>
+                        <span class="bells-arrow">\u25be</span>
+                    </button>
+                    <div class="bells-list" id="bellsList"></div>
+                </div>
                 <div id="snapshotControls"></div>
                 <div class="footer" id="footer">Обновлено: -</div>
             `;
@@ -606,6 +670,7 @@
             renderLessons();
             renderSnapshotControls();
             updateStatusBar();
+            renderFooter();
         }
 
         // ======= НОВОЕ: рендер списка уроков (с учётом событий и снапшота) =======
@@ -748,28 +813,33 @@
                 return;
             }
 
-            // Сегодня — показываем таймер
+            // Сегодня — показываем таймер + перемены
             const now = new Date().getHours() * 60 + new Date().getMinutes();
-            let active = null, next = null;
 
-            Object.entries(pairTimes).forEach(([pair, timeList]) => {
-                timeList.forEach(t => {
-                    const start = minutes(t.start);
-                    const end = minutes(t.end);
-                    if (now >= start && now < end) {
-                        active = { pair: parseInt(pair), end };
-                    } else if (start > now && (!next || start < next.start)) {
-                        next = { pair: parseInt(pair), start };
-                    }
-                });
+            // Пара целиком: старт 1-й половинки -> конец 2-й половинки
+            const intervals = Object.entries(pairTimes).map(([pair, halves]) => ({
+                pair: parseInt(pair),
+                start: minutes(halves[0].start),
+                end: minutes(halves[halves.length - 1].end)
+            })).sort((a, b) => a.start - b.start);
+
+            let active = null, next = null, prevEnded = false;
+            intervals.forEach(iv => {
+                if (now >= iv.start && now < iv.end) active = iv;
+                if (iv.start > now && !next) next = iv;
+                if (iv.end <= now) prevEnded = true;
             });
 
             if (active) {
+                let txt = `Идёт ${active.pair}-я пара \u00b7 осталось ${active.end - now} мин`;
+                txt += next ? ` \u00b7 перемена ${next.start - active.end} мин` : ` \u00b7 дальше пар нет`;
                 statusBar.className = 'status-bar going';
-                statusBar.textContent = `Идёт ${active.pair}-я пара \u00b7 осталось ${active.end - now} мин`;
+                statusBar.textContent = txt;
             } else if (next) {
                 statusBar.className = 'status-bar soon';
-                statusBar.textContent = `Следующая пара через ${next.start - now} мин`;
+                statusBar.textContent = prevEnded
+                    ? `Перемена \u00b7 следующая пара через ${next.start - now} мин`
+                    : `Следующая пара через ${next.start - now} мин`;
             } else {
                 const count = (currentLessons || []).length;
                 statusBar.className = 'status-bar empty';
@@ -784,23 +854,61 @@
                 if (response.ok) {
                     const data = await response.json();
                     pairTimes = data.times || {};
+                    renderBells();
                 }
             } catch (error) { console.error(error); }
+        }
+
+        // ======= РАСПИСАНИЕ ЗВОНКОВ: рендер списка =======
+        function renderBells() {
+            const list = document.getElementById('bellsList');
+            const title = document.getElementById('bellsTitle');
+            if (!list) return;
+            if (title) title.textContent = `Расписание звонков \u00b7 ${currentDay}`;
+
+            const keys = Object.keys(pairTimes).map(Number).sort((a, b) => a - b);
+            if (keys.length === 0) {
+                list.innerHTML = '<div class="bell-row"><div class="bell-num">Звонков нет</div></div>';
+                return;
+            }
+            list.innerHTML = keys.map(k => `
+                <div class="bell-row">
+                    <div class="bell-num">${k} пара</div>
+                    <div class="bell-times">
+                        ${(pairTimes[k] || []).map(h => `<span>${escapeHtml(h.start)}\u2013${escapeHtml(h.end)}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function loadLastUpdate() {
             try {
                 const response = await fetch(`${API_BASE}/api/last_update`);
                 if (response.ok) {
-                    const data = await response.json();
-                    const footer = document.getElementById('footer');
-                    if (footer) footer.textContent = formatLastUpdate(data);
+                    lastUpdateData = await response.json();
+                    renderFooter();
                 }
             } catch (error) { console.error(error); }
         }
 
+        // ======= ФУТЕР: основная строка + строка изменения =======
+        function renderFooter() {
+            const footer = document.getElementById('footer');
+            if (!footer) return;
+            let html = `<div>${escapeHtml(formatLastUpdate(lastUpdateData))}</div>`;
+            if (hasChanges && lastUpdateData && lastUpdateData.end_time) {
+                const end = new Date(lastUpdateData.end_time.replace(' ', 'T'));
+                if (!isNaN(end)) {
+                    const hm = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+                    html += `<div class="footer-changed">Расписание менялось \u00b7 ${hm}</div>`;
+                }
+            }
+            footer.innerHTML = html;
+        }
+
         // Умный футер: сегодня -> просто время, вчера -> "вчера", иначе -> дата
         function formatLastUpdate(data) {
+            if (!data) return 'Обновлено: -';
             if (data.start_time && data.end_time) {
                 const start = new Date(data.start_time.replace(' ', 'T'));
                 const end = new Date(data.end_time.replace(' ', 'T'));
