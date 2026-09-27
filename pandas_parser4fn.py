@@ -80,6 +80,14 @@ def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id):
         room = data.iloc[2]
         subject = data.iloc[1]  # Получаем текущий предмет
 
+        # отдельная проверка и занос в бд номеров дистанта
+        if str(room).isdigit() and int(room) > 600:
+            # INSERT OR IGNORE спасет от ошибки, если предмет уже есть в БД
+            cursor.execute("""
+                INSERT OR REPLACE INTO distance_cabinets (subject, room_number)
+                VALUES (?, ?)
+            """, (subject, room))
+
         if pd.isna(room):
             if prev_room is not None and prev_subject == subject:
                 room = prev_room # Используем кабинет из предыдущей строки

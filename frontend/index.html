@@ -860,6 +860,7 @@
                     <button class="tab" data-tab="subjects">Предметы</button>
                     <button class="tab" data-tab="teachers">Преподаватели</button>
                     <button class="tab" data-tab="bells">Звонки</button>
+                    <button class="tab" data-tab="distance">Дистанты</button>
                 </div>
                 <div class="tab-content active" id="tab-rooms">
                     <h2 class="tab-title">Свободные аудитории</h2>
@@ -902,6 +903,23 @@
                 </div>
                 <div class="tab-content" id="tab-teachers">
                     <div class="placeholder">Поиск расписания преподавателей (в разработке)</div>
+                </div>
+                <div class="tab-content" id="tab-distance">
+                    <h2 class="tab-title">Номера дистантов</h2>
+                    <p class="tab-description">Код кабинета дистанта по предмету. Введи точное название предмета или смотри весь список с сортировкой</p>
+                    <div class="form-group">
+                        <label class="form-label">Предмет (необязательно)</label>
+                        <input type="text" class="input-field" id="distanceSubject" placeholder="Например: Математика">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Сортировка списка</label>
+                        <select class="select-field" id="distanceSort">
+                            <option value="number" selected>По номеру дистанта</option>
+                            <option value="subject">По предмету (А–Я)</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="btnFindDistance">Показать</button>
+                    <div id="distanceResult"></div>
                 </div>
                 <div class="tab-content" id="tab-bells">
                     <h2 class="tab-title">Расписание звонков</h2>
@@ -1030,6 +1048,59 @@
                             <table>
                                 <thead><tr><th>Пара</th><th>1-я половинка</th><th>2-я половинка</th></tr></thead>
                                 <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    `;
+                } catch (error) {
+                    result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
+                }
+            });
+            // ======= ДИСТАНТЫ: номера кабинетов дистанта =======
+            document.getElementById('btnFindDistance').addEventListener('click', async () => {
+                const subject = document.getElementById('distanceSubject').value.trim();
+                const sortBy = document.getElementById('distanceSort').value;
+                const result = document.getElementById('distanceResult');
+
+                result.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
+
+                try {
+                    // введён предмет -> ищем по нему (точное совпадение), иначе -> сортировка списка
+                    const url = subject
+                        ? `${API_BASE}/api/distance?subject=${encodeURIComponent(subject)}`
+                        : `${API_BASE}/api/distance?sort_by=${encodeURIComponent(sortBy)}`;
+
+                    const response = await fetch(url);
+
+                    if (!response.ok) {
+                        result.innerHTML = '<div class="placeholder">Ничего не найдено</div>';
+                        return;
+                    }
+
+                    const data = await response.json();
+                    const entries = Object.entries(data.map || {});
+
+                    if (entries.length === 0) {
+                        result.innerHTML = '<div class="placeholder">Дистантов не найдено</div>';
+                        return;
+                    }
+
+                    result.innerHTML = `
+                        <div class="results-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Предмет</th>
+                                        <th>Номер дистанта</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${entries.map(([subj, num]) => `
+                                        <tr>
+                                            <td><strong>${escapeHtml(subj)}</strong></td>
+                                            <td><span class="room-badge">${escapeHtml(num)}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
                             </table>
                         </div>
                     `;
