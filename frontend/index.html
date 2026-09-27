@@ -155,65 +155,13 @@
         }
 
         .footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px 0; letter-spacing: 0.3px; }
-                /* ======= РАСПИСАНИЕ ЗВОНКОВ ======= */
-        .bells-section { margin-bottom: 25px; }
-        .bells-toggle {
-            width: 100%;
-            height: 52px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--line);
-            border-radius: 15px;
-            color: var(--white);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-        .bells-toggle:active { background: rgba(255,255,255,0.12); }
-        .bells-arrow { color: var(--muted); transition: transform 0.3s ease; font-size: 12px; }
-        .bells-section.open .bells-arrow { transform: rotate(180deg); }
-        .bells-list {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.35s ease;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid transparent;
-            border-radius: 15px;
-        }
-        .bells-section.open .bells-list {
-            max-height: 420px;
-            overflow-y: auto;
-            border-color: var(--line);
-            margin-top: 12px;
-            padding: 6px 0;
-        }
-        .bell-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--line);
-        }
-        .bell-row:last-child { border-bottom: none; }
-        .bell-num { font-size: 14px; font-weight: 700; }
-        .bell-times { display: flex; flex-direction: column; gap: 2px; text-align: right; }
-        .bell-times span { font-size: 12px; color: var(--muted); }
 
         .footer-changed { color: var(--pink); margin-top: 5px; font-size: 11px; letter-spacing: 0.3px; }
         .placeholder { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 15px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; }
 
         /* TABS & SEARCH */
-        .tabs { display: flex; gap: 10px; margin-bottom: 30px; }
-        .tab { flex: 1; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: inherit; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+        .tab { flex: 1 1 45%; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: inherit; }
         .tab.active { background: linear-gradient(135deg, var(--pink), var(--violet)); color: var(--white); border-color: transparent; box-shadow: 0 0 20px rgba(255,51,102,0.3); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -579,13 +527,6 @@
                 </div>
                 <div class="status-bar empty" id="statusBar">Загрузка...</div>
                 <div class="lessons" id="lessonsList"><div class="placeholder"><span class="spinner"></span></div></div>
-                <div class="bells-section" id="bellsSection">
-                    <button class="bells-toggle" id="bellsToggle">
-                        <span id="bellsTitle">Расписание звонков</span>
-                        <span class="bells-arrow">\u25be</span>
-                    </button>
-                    <div class="bells-list" id="bellsList"></div>
-                </div>
                 <div id="snapshotControls"></div>
                 <div class="footer" id="footer">Обновлено: -</div>
             `;
@@ -597,9 +538,6 @@
             });
 
             document.getElementById('btnSearch').addEventListener('click', renderSearch);
-            document.getElementById('bellsToggle').addEventListener('click', () => {
-                document.getElementById('bellsSection').classList.toggle('open');
-            });
 
             const dayScroll = document.getElementById('dayScroll');
             enableFreeScroll(dayScroll);
@@ -854,32 +792,10 @@
                 if (response.ok) {
                     const data = await response.json();
                     pairTimes = data.times || {};
-                    renderBells();
                 }
             } catch (error) { console.error(error); }
         }
 
-        // ======= РАСПИСАНИЕ ЗВОНКОВ: рендер списка =======
-        function renderBells() {
-            const list = document.getElementById('bellsList');
-            const title = document.getElementById('bellsTitle');
-            if (!list) return;
-            if (title) title.textContent = `Расписание звонков \u00b7 ${currentDay}`;
-
-            const keys = Object.keys(pairTimes).map(Number).sort((a, b) => a - b);
-            if (keys.length === 0) {
-                list.innerHTML = '<div class="bell-row"><div class="bell-num">Звонков нет</div></div>';
-                return;
-            }
-            list.innerHTML = keys.map(k => `
-                <div class="bell-row">
-                    <div class="bell-num">${k} пара</div>
-                    <div class="bell-times">
-                        ${(pairTimes[k] || []).map(h => `<span>${escapeHtml(h.start)}\u2013${escapeHtml(h.end)}</span>`).join('')}
-                    </div>
-                </div>
-            `).join('');
-        }
 
         async function loadLastUpdate() {
             try {
@@ -943,6 +859,7 @@
                     <button class="tab active" data-tab="rooms">Аудитории</button>
                     <button class="tab" data-tab="subjects">Предметы</button>
                     <button class="tab" data-tab="teachers">Преподаватели</button>
+                    <button class="tab" data-tab="bells">Звонки</button>
                 </div>
                 <div class="tab-content active" id="tab-rooms">
                     <h2 class="tab-title">Свободные аудитории</h2>
@@ -985,6 +902,20 @@
                 </div>
                 <div class="tab-content" id="tab-teachers">
                     <div class="placeholder">Поиск расписания преподавателей (в разработке)</div>
+                </div>
+                <div class="tab-content" id="tab-bells">
+                    <h2 class="tab-title">Расписание звонков</h2>
+                    <p class="tab-description">Полное время пар для выбранного типа дня</p>
+                    <div class="form-group">
+                        <label class="form-label">Тип дня</label>
+                        <select class="select-field" id="bellsDayType">
+                            <option value="monday">ПН</option>
+                            <option value="weekday">Обычно (ВТ–ПТ)</option>
+                            <option value="saturday">Суббота (СБ)</option>
+                        </select>
+                    </div>
+                <button class="btn-primary" id="btnFindBells">Показать звонки</button>
+                <div id="bellsResult"></div>
                 </div>
             `;
 
@@ -1063,6 +994,45 @@
                             </div>
                         `;
                     }
+                } catch (error) {
+                    result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
+                }
+            });
+            // ======= ЗВОНКИ: отдельная вкладка поиска =======
+            document.getElementById('bellsDayType').value = DAY_TYPES[currentDay] || 'weekday';
+            document.getElementById('btnFindBells').addEventListener('click', async () => {
+                const dayType = document.getElementById('bellsDayType').value;
+                const result = document.getElementById('bellsResult');
+                result.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
+                try {
+                    const response = await fetch(`${API_BASE}/api/pair_times?day_type=${encodeURIComponent(dayType)}`);
+                    const data = await response.json();
+                    const times = data.times || {};
+                    const keys = Object.keys(times).map(Number).sort((a, b) => a - b);
+                    if (keys.length === 0) {
+                        result.innerHTML = '<div class="placeholder">Звонков для этого дня нет</div>';
+                        return;
+                    }
+                    const rows = keys.map(k => {
+                        // дедупликация половинок: защита от дублей в БД
+                        const seen = new Set();
+                        const halves = (times[k] || []).filter(h => {
+                            const key = `${h.start}-${h.end}`;
+                            if (seen.has(key)) return false;
+                            seen.add(key);
+                            return true;
+                        });
+                        const fmt = (h) => (h && h.start && h.end) ? `${h.start}\u2013${h.end}` : '\u2014';
+                        return `<tr><td><strong>${k}</strong></td><td>${fmt(halves[0])}</td><td>${fmt(halves[1])}</td></tr>`;
+                    }).join('');
+                    result.innerHTML = `
+                        <div class="results-table">
+                            <table>
+                                <thead><tr><th>Пара</th><th>1-я половинка</th><th>2-я половинка</th></tr></thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    `;
                 } catch (error) {
                     result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
                 }
