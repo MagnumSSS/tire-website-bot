@@ -83,16 +83,19 @@
         .status-bar.going { background: linear-gradient(135deg, rgba(255,51,102,0.3), rgba(184,41,221,0.2)); border: 1px solid var(--pink); }
         .status-bar.soon { background: rgba(255,165,0,0.15); border: 1px solid rgba(255,165,0,0.5); color: #ffa500; }
         .status-bar.empty, .status-bar.neutral { background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--muted); }
+        .status-wrap { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+        .status-wrap .status-bar { margin-bottom: 0; }
+        .sub-status { font-size: 13px; font-weight: 500; color: var(--muted); background: rgba(255,255,255,0.04); border: 1px solid var(--line); min-height: 40px; padding: 10px 16px; }
 
         /* LESSON CARDS */
         .lessons { display: flex; flex-direction: column; gap: 20px; margin-bottom: 35px; }
-        .lesson { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; padding: 25px; display: grid; grid-template-columns: 90px 1fr 70px; gap: 15px; min-height: 125px; transition: all 0.3s ease; align-items: center; }
+        .lesson { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 17px; padding: 25px; display: grid; grid-template-columns: 90px minmax(0, 1fr) 70px; gap: 15px; min-height: 125px; transition: all 0.3s ease; align-items: center; }
         .lesson.current { background: linear-gradient(115deg, rgba(255,51,102,0.3), rgba(184,41,221,0.27)); border-color: var(--pink); box-shadow: 0 0 25px rgba(255,51,102,0.2); animation: pulse 2.2s infinite; }
         @keyframes pulse { 0%, 100% { box-shadow: 0 0 25px rgba(255,51,102,0.2); } 50% { box-shadow: 0 0 40px rgba(255,51,102,0.4); } }
         .lesson-time { display: flex; flex-direction: column; gap: 4px; }
         .lesson-time strong { font-size: 14px; font-weight: 700; }
         .lesson-time span { font-size: 12px; color: var(--muted); line-height: 1.3; }
-        .lesson-subject { display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3; padding: 0 5px; }
+        .lesson-subject { display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3; padding: 0 5px; overflow-wrap: anywhere; }
         .lesson-room { display: flex; align-items: center; justify-content: center; }
         .room-badge { background: linear-gradient(135deg, var(--violet), var(--indigo)); padding: 8px 14px; border-radius: 12px; font-size: 14px; font-weight: 600; text-align: center; white-space: nowrap; }
 
@@ -272,7 +275,7 @@
 
         @media (max-width: 370px) {
             .container { padding: 15px 15px 30px; }
-            .lesson { grid-template-columns: 80px 1fr 60px; padding: 20px; gap: 10px; min-height: 110px; }
+            .lesson { grid-template-columns: 80px minmax(0, 1fr) 60px; padding: 20px; gap: 10px; min-height: 110px; }
             .lesson-time strong { font-size: 13px; }
             .lesson-time span { font-size: 11px; }
             .lesson-subject { font-size: 14px; }
@@ -344,6 +347,19 @@
             if (mod10 === 1 && mod100 !== 11) return `${n} пара`;
             if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return `${n} пары`;
             return `${n} пар`;
+        }
+        // ======= Формат времени: минуты/часы + ЧЧ:ММ =======
+        function fmtDur(mins) {
+            if (mins < 60) return `${mins} мин`;
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return `${h} ч ${String(m).padStart(2, '0')} мин`;
+        }
+
+        function fmtClock(minsFromMidnight) {
+            const h = Math.floor(minsFromMidnight / 60) % 24;
+            const m = minsFromMidnight % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
 
         // ======= НОВОЕ: парсинг события типа "ВПР 12:30" =======
@@ -525,7 +541,10 @@
                         ${DAYS.map(day => `<div class="day-item ${day === currentDay ? 'active' : ''}" data-day="${day}">${day}</div>`).join('')}
                     </div>
                 </div>
-                <div class="status-bar empty" id="statusBar">Загрузка...</div>
+                <div class="status-wrap">
+                    <div class="status-bar empty" id="statusBar">Загрузка...</div>
+                    <div class="status-bar sub-status" id="subStatusBar" style="display:none"></div>
+                </div>
                 <div class="lessons" id="lessonsList"><div class="placeholder"><span class="spinner"></span></div></div>
                 <div id="snapshotControls"></div>
                 <div class="footer" id="footer">Обновлено: -</div>
@@ -734,54 +753,121 @@
             return false;
         }
 
-        // ======= ИСПРАВЛЕНО: таймер только для сегодня =======
+        // ======= Универсальный расчёт статуса по интервалам пар =======
+        // intervals: [{ pair, start, end, end1, subject? }]
+        function buildStatus(intervals, now, opts = {}) {
+            const withSubjects = !!opts.withSubjects;
+            const earlyWindow = !!opts.earlyWindow;
+            const list = intervals.slice().sort((a, b) => a.start - b.start);
+            if (list.length === 0) return { main: 'Пар нет', sub: '', cls: 'empty' };
+
+            const first = list[0];
+            const last = list[list.length - 1];
+            let active = null, next = null, prev = null;
+            list.forEach(iv => {
+                if (now >= iv.start && now < iv.end) active = iv;
+                if (!next && iv.start > now) next = iv;
+                if (iv.end <= now) prev = iv;
+            });
+
+            const label = (iv) => (withSubjects && iv.subject)
+                ? `${iv.pair}-я пара (${iv.subject})`
+                : `${iv.pair}-я пара`;
+
+            // Идёт пара
+            if (active) {
+                const main = `Идёт ${label(active)} · осталось ${fmtDur(active.end - now)} · до ${fmtClock(active.end)}`;
+                let sub = '';
+                if (active.end1 != null && now < active.end1) {
+                    sub = `До конца 1-й половинки ${fmtDur(active.end1 - now)} · до ${fmtClock(active.end1)}`;
+                } else if (active.end1 != null) {
+                    sub = '1-я половинка закончилась';
+                }
+                sub += next
+                    ? ` · перемена после пары ${fmtDur(next.start - active.end)}`
+                    : ' · дальше пар нет';
+                return { main, sub, cls: 'going' };
+            }
+
+            // Перемена между парами
+            if (next && prev) {
+                const main = `Перемена · ${label(next)} через ${fmtDur(next.start - now)} · в ${fmtClock(next.start)}`;
+                const sub = `Перемена ${fmtDur(next.start - prev.end)} · до ${fmtClock(next.start)}`;
+                return { main, sub, cls: 'soon' };
+            }
+
+            // До первой пары
+            if (next) {
+                // локальный режим: таймер просыпается за 2 часа до первой пары
+                if (earlyWindow && now < first.start - 120) return { main: null, sub: '', cls: 'empty' };
+                const main = `${label(next)} через ${fmtDur(next.start - now)} · начнётся в ${fmtClock(next.start)}`;
+                return { main, sub: '', cls: 'soon' };
+            }
+
+            // Пары закончились
+            return { main: `Пары закончились в ${fmtClock(last.end)}`, sub: '', cls: 'empty' };
+        }
+
+        // ======= ЛОКАЛЬНЫЙ таймер: только пары из расписания группы =======
         function updateStatusBar() {
             const statusBar = document.getElementById('statusBar');
             if (!statusBar) return;
+            const subBar = document.getElementById('subStatusBar');
+            const hideSub = () => { if (subBar) subBar.style.display = 'none'; };
 
             const today = getCurrentDay();
             const isToday = currentDay === today && !isViewingSnapshot;
+            const lessonsToShow = isViewingSnapshot ? (snapshotLessons || []) : currentLessons;
+            const { normal, events } = processLessons(lessonsToShow);
 
-            // Если не сегодня (или смотрим снапшот) — только счётчик пар
-            if (!isToday) {
-                const lessonsToShow = isViewingSnapshot ? (snapshotLessons || []) : currentLessons;
-                const count = (lessonsToShow || []).length;
+            // День из одних мероприятий — счётчик пар недействителен
+            if (normal.length === 0 && events.length > 0) {
                 statusBar.className = 'status-bar neutral';
-                statusBar.textContent = count > 0 ? pluralizePairs(count) : 'Пар нет';
+                statusBar.textContent = `Мероприятие: ${events.map(e => e.name).join(', ')}`;
+                hideSub();
                 return;
             }
 
-            // Сегодня — показываем таймер + перемены
+            // Не сегодня / снапшот — только счётчик
+            if (!isToday) {
+                statusBar.className = 'status-bar neutral';
+                statusBar.textContent = normal.length > 0 ? pluralizePairs(normal.length) : 'Пар нет';
+                hideSub();
+                return;
+            }
+
             const now = new Date().getHours() * 60 + new Date().getMinutes();
+            const intervals = normal
+                .map(l => {
+                    const halves = pairTimes[l.pair] || [];
+                    if (!halves.length) return null;
+                    return {
+                        pair: l.pair,
+                        subject: l.subject,
+                        start: minutes(halves[0].start),
+                        end: minutes(halves[halves.length - 1].end),
+                        end1: halves[0].end ? minutes(halves[0].end) : null
+                    };
+                })
+                .filter(Boolean);
 
-            // Пара целиком: старт 1-й половинки -> конец 2-й половинки
-            const intervals = Object.entries(pairTimes).map(([pair, halves]) => ({
-                pair: parseInt(pair),
-                start: minutes(halves[0].start),
-                end: minutes(halves[halves.length - 1].end)
-            })).sort((a, b) => a.start - b.start);
+            const st = buildStatus(intervals, now, { withSubjects: true, earlyWindow: true });
 
-            let active = null, next = null, prevEnded = false;
-            intervals.forEach(iv => {
-                if (now >= iv.start && now < iv.end) active = iv;
-                if (iv.start > now && !next) next = iv;
-                if (iv.end <= now) prevEnded = true;
-            });
-
-            if (active) {
-                let txt = `Идёт ${active.pair}-я пара \u00b7 осталось ${active.end - now} мин`;
-                txt += next ? ` \u00b7 перемена ${next.start - active.end} мин` : ` \u00b7 дальше пар нет`;
-                statusBar.className = 'status-bar going';
-                statusBar.textContent = txt;
-            } else if (next) {
-                statusBar.className = 'status-bar soon';
-                statusBar.textContent = prevEnded
-                    ? `Перемена \u00b7 следующая пара через ${next.start - now} мин`
-                    : `Следующая пара через ${next.start - now} мин`;
-            } else {
-                const count = (currentLessons || []).length;
+            // Слишком рано до первой пары — нейтральная строка
+            if (st.main === null) {
                 statusBar.className = 'status-bar empty';
-                statusBar.textContent = count > 0 ? `${pluralizePairs(count)} сегодня` : 'На данный момент пар нет';
+                statusBar.textContent = `${pluralizePairs(normal.length)} сегодня`;
+                hideSub();
+                return;
+            }
+
+            statusBar.className = `status-bar ${st.cls}`;
+            statusBar.textContent = st.main;
+            if (subBar && st.sub) {
+                subBar.textContent = st.sub;
+                subBar.style.display = 'flex';
+            } else {
+                hideSub();
             }
         }
 
@@ -858,7 +944,7 @@
                 <div class="tabs">
                     <button class="tab active" data-tab="rooms">Аудитории</button>
                     <button class="tab" data-tab="subjects">Предметы</button>
-                    <button class="tab" data-tab="teachers">Преподаватели</button>
+                    <button class="tab" data-tab="gtimer">Таймер</button>
                     <button class="tab" data-tab="bells">Звонки</button>
                     <button class="tab" data-tab="distance">Дистанты</button>
                 </div>
@@ -901,8 +987,21 @@
                     <button class="btn-primary" id="btnFindSubjects">Найти группы</button>
                     <div id="subjectsResult"></div>
                 </div>
-                <div class="tab-content" id="tab-teachers">
-                    <div class="placeholder">Поиск расписания преподавателей (в разработке)</div>
+                <div class="tab-content" id="tab-gtimer">
+                    <h2 class="tab-title">Глобальный таймер</h2>
+                    <p class="tab-description">Живой таймер по всем парам типа дня: сколько до пары, сколько осталось паре и какая перемена следующая</p>
+                    <div class="form-group">
+                        <label class="form-label">Тип дня</label>
+                        <select class="select-field" id="gTimerDayType">
+                            <option value="monday">ПН</option>
+                            <option value="weekday">Обычно (ВТ–ПТ)</option>
+                            <option value="saturday">Суббота (СБ)</option>
+                        </select>
+                    </div>
+                    <div class="status-wrap">
+                        <div class="status-bar empty" id="gTimerMain">Загрузка...</div>
+                        <div class="status-bar sub-status" id="gTimerSub" style="display:none"></div>
+                    </div>
                 </div>
                 <div class="tab-content" id="tab-distance">
                     <h2 class="tab-title">Номера дистантов</h2>
@@ -1108,6 +1207,55 @@
                     result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
                 }
             });
+                        // ======= ГЛОБАЛЬНЫЙ таймер: все пары типа дня =======
+            const gTimerSelect = document.getElementById('gTimerDayType');
+            gTimerSelect.value = DAY_TYPES[currentDay] || 'weekday';
+            let gTimerTimes = {};
+
+            const renderGlobalTimer = () => {
+                const main = document.getElementById('gTimerMain');
+                const sub = document.getElementById('gTimerSub');
+                if (!main) return;
+                const now = new Date().getHours() * 60 + new Date().getMinutes();
+                const intervals = Object.entries(gTimerTimes).map(([p, halves]) => ({
+                    pair: parseInt(p),
+                    start: minutes(halves[0].start),
+                    end: minutes(halves[halves.length - 1].end),
+                    end1: halves[0].end ? minutes(halves[0].end) : null
+                }));
+                const st = buildStatus(intervals, now, { withSubjects: false, earlyWindow: false });
+                main.className = `status-bar ${st.cls}`;
+                main.textContent = st.main;
+                if (sub && st.sub) {
+                    sub.textContent = st.sub;
+                    sub.style.display = 'flex';
+                } else if (sub) {
+                    sub.style.display = 'none';
+                }
+            };
+
+            const loadGlobalTimer = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/pair_times?day_type=${gTimerSelect.value}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        gTimerTimes = data.times || {};
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+                renderGlobalTimer();
+            };
+
+            gTimerSelect.addEventListener('change', loadGlobalTimer);
+            loadGlobalTimer();
+            const gTimerInterval = setInterval(() => {
+                if (!document.getElementById('gTimerMain')) {
+                    clearInterval(gTimerInterval);
+                    return;
+                }
+                renderGlobalTimer();
+            }, 30000);
         }
 
         // ===================== LOAD GROUPS =====================
