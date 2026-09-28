@@ -22,7 +22,10 @@ with sqlite3.connect('data/schedule.db') as conn:
         SELECT group_name, pair_number, day_of_week, subject, room 
         FROM schedule
     """)
+    cursor.execute("DELETE FROM schedule")
     conn.commit()
+
+
 
     # 1. Читаем все группы из БД
     cursor.execute("SELECT group_name, file_path FROM groups")
