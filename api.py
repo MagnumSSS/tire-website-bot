@@ -385,6 +385,52 @@ def get_distance_number(
         "map": group_and_number
     }
 
+# сортировка применяется сразу к двум таблицам, а не по отдельности 
+@app.get("/api/distance_raw")
+def get_distance_number(
+    # Query("group" - по умолчанию
+    sort_by: str = Query("number", description="Сортировка: 'number' или 'subject'"),
+    subject: Optional[str] = Query(None)
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if subject:
+        cursor.execute("""
+            SELECT subject, room_number
+            FROM distance_cabinets_raw
+            WHERE subject = ?
+        """, (subject, )) # без сортировки какой либо, но ищем предмет ЗАКОНЧИТЬ
+    elif sort_by == "number":
+        cursor.execute("""
+            SELECT subject, room_number
+            FROM distance_cabinets_raw
+            ORDER BY CAST(room_number AS INTEGER) ASC
+        """)
+    elif sort_by == "subject":
+        cursor.execute("""
+            SELECT subject, room_number
+            FROM distance_cabinets_raw
+            ORDER BY subject ASC
+        """)
+    else:
+        raise HTTPException(
+            status_code=400, 
+            detail="Нужно указать хотя бы сортировку или сам предмет"
+        )
+
+    rows = cursor.fetchall()
+    conn.close()
+    group_and_number = {}
+    for row in rows:
+        subj = row["subject"]
+        distance_number = row["room_number"]
+        group_and_number[subj] = distance_number
+
+    return {
+        "map": group_and_number
+    }
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}

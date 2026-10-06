@@ -185,6 +185,18 @@
         .results-table th { background: rgba(255,255,255,0.05); font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
         .results-table tr:last-child td { border-bottom: none; }
         .results-table td { color: var(--white); }
+        
+                /* ======= ДИСТАНТЫ: проверенные и сырые таблицы ======= */
+        .distance-block { margin-top: 25px; }
+        .distance-head { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+        .distance-head.verified-head { color: #2ecc71; }
+        .distance-head.raw-head { color: #ff4757; }
+        .distance-ps { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+        .distance-empty { font-size: 13px; color: var(--muted); padding: 14px; border: 1px dashed var(--line); border-radius: 12px; }
+        .results-table.verified { background: rgba(46, 204, 113, 0.07); border-color: rgba(46, 204, 113, 0.35); }
+        .results-table.raw { background: rgba(255, 71, 87, 0.07); border-color: rgba(255, 71, 87, 0.35); }
+        .results-table.raw .room-badge { background: rgba(255, 71, 87, 0.18); border: 1px solid rgba(255, 71, 87, 0.5); }
+        .distance-block .results-table { margin-top: 0; }
 
         .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -1005,7 +1017,7 @@
                 </div>
                 <div class="tab-content" id="tab-distance">
                     <h2 class="tab-title">Номера дистантов</h2>
-                    <p class="tab-description">Код кабинета дистанта по предмету. Введи точное название предмета или смотри весь список с сортировкой</p>
+                    <p class="tab-description">Код кабинета дистанта по предмету. Проверенные и сырые номера — двумя таблицами, поиск и сортировка применяются к обеим сразу</p>
                     <div class="form-group">
                         <label class="form-label">Предмет (необязательно)</label>
                         <input type="text" class="input-field" id="distanceSubject" placeholder="Например: Математика">
@@ -1154,53 +1166,77 @@
                     result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
                 }
             });
-            // ======= ДИСТАНТЫ: номера кабинетов дистанта =======
+            // ======= ДИСТАНТЫ: проверенные + сырые номера =======
             document.getElementById('btnFindDistance').addEventListener('click', async () => {
                 const subject = document.getElementById('distanceSubject').value.trim();
                 const sortBy = document.getElementById('distanceSort').value;
                 const result = document.getElementById('distanceResult');
-
                 result.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
 
+                // один набор параметров на обе таблицы: сортировка бьёт сразу по двум
+                const params = subject
+                    ? `subject=${encodeURIComponent(subject)}`
+                    : `sort_by=${encodeURIComponent(sortBy)}`;
+
+                const buildTable = (entries, tone) => `
+                    <div class="results-table ${tone}">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Предмет</th>
+                                    <th>Номер дистанта</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${entries.map(([subj, num]) => `
+                                    <tr>
+                                        <td><strong>${escapeHtml(subj)}</strong></td>
+                                        <td><span class="room-badge">${escapeHtml(num)}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
                 try {
-                    // введён предмет -> ищем по нему (точное совпадение), иначе -> сортировка списка
-                    const url = subject
-                        ? `${API_BASE}/api/distance?subject=${encodeURIComponent(subject)}`
-                        : `${API_BASE}/api/distance?sort_by=${encodeURIComponent(sortBy)}`;
+                    // оба эндпоинта летят параллельно с одинаковыми параметрами
+                    const [verifiedRes, rawRes] = await Promise.allSettled([
+                        fetch(`${API_BASE}/api/distance?${params}`),
+                        fetch(`${API_BASE}/api/distance_raw?${params}`)
+                    ]);
 
-                    const response = await fetch(url);
+                    let verifiedEntries = [];
+                    let rawEntries = [];
 
-                    if (!response.ok) {
-                        result.innerHTML = '<div class="placeholder">Ничего не найдено</div>';
-                        return;
+                    if (verifiedRes.status === 'fulfilled' && verifiedRes.value.ok) {
+                        const data = await verifiedRes.value.json();
+                        verifiedEntries = Object.entries(data.map || {});
+                    }
+                    if (rawRes.status === 'fulfilled' && rawRes.value.ok) {
+                        const data = await rawRes.value.json();
+                        rawEntries = Object.entries(data.map || {});
                     }
 
-                    const data = await response.json();
-                    const entries = Object.entries(data.map || {});
-
-                    if (entries.length === 0) {
+                    if (verifiedEntries.length === 0 && rawEntries.length === 0) {
                         result.innerHTML = '<div class="placeholder">Дистантов не найдено</div>';
                         return;
                     }
 
                     result.innerHTML = `
-                        <div class="results-table">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Предмет</th>
-                                        <th>Номер дистанта</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${entries.map(([subj, num]) => `
-                                        <tr>
-                                            <td><strong>${escapeHtml(subj)}</strong></td>
-                                            <td><span class="room-badge">${escapeHtml(num)}</span></td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
+                        <div class="distance-block">
+                            <div class="distance-head verified-head">Проверенные номера</div>
+                            <p class="distance-ps">PS: данные прошли проверку</p>
+                            ${verifiedEntries.length > 0
+                                ? buildTable(verifiedEntries, 'verified')
+                                : '<div class="distance-empty">В проверенной таблице ничего не найдено</div>'}
+                        </div>
+                        <div class="distance-block">
+                            <div class="distance-head raw-head">Сырая таблица номеров</div>
+                            <p class="distance-ps">PS: данные требуются в проверке</p>
+                            ${rawEntries.length > 0
+                                ? buildTable(rawEntries, 'raw')
+                                : '<div class="distance-empty">В сырой таблице ничего не найдено</div>'}
                         </div>
                     `;
                 } catch (error) {

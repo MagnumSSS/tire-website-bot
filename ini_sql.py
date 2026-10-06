@@ -20,6 +20,13 @@ def ini_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS distance_cabinets_raw (
+                subject TEXT PRIMARY KEY,
+                room_number TEXT NOT NULL
+            )
+        """)
+
         # основное бд йоу
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS schedule (

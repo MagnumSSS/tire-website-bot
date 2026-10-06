@@ -84,7 +84,7 @@ def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id):
         if str(room).isdigit() and int(room) > 600:
             # INSERT OR IGNORE спасет от ошибки, если предмет уже есть в БД
             cursor.execute("""
-                INSERT OR REPLACE INTO distance_cabinets (subject, room_number)
+                INSERT OR REPLACE INTO distance_cabinets_raw (subject, room_number)
                 VALUES (?, ?)
             """, (subject, room))
 
