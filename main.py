@@ -5,58 +5,77 @@ import add_time
 
 DAYS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
 
-# запускаем парс групп, потом по этим группам уже парс расписания. в этом парсе находится инициализация бд
 parser_n1.ini_parser_groups()
-# заполняем расписание
 add_time.init_times()
 
-
 with sqlite3.connect('data/schedule.db') as conn:
-    # создаем курсор
     cursor = conn.cursor()
 
-    # Сохраняем текущее расписание как снапшот
-    cursor.execute("DELETE FROM schedule_snapshot")
-    cursor.execute("""
-        INSERT INTO schedule_snapshot 
-        SELECT group_name, pair_number, day_of_week, subject, room 
-        FROM schedule
-    """)
+    # 1. Сохраняем ТЕКУЩЕЕ расписание в снапшот (пока оно ещё есть!)
+    cursor.execute("SELECT COUNT(*) FROM schedule")
+    old_count = cursor.fetchone()[0]
+    
+    if old_count > 0:
+        cursor.execute("DELETE FROM schedule_snapshot")
+        cursor.execute("""
+            INSERT INTO schedule_snapshot 
+            SELECT group_name, pair_number, day_of_week, subject, room 
+            FROM schedule
+        """)
+        conn.commit()
+        print(f"✅ Сохранено {old_count} записей в снапшот")
+    else:
+        print("⚠️  Старое расписание пустое — снапшот не создан")
+
+    # 2. Читаем группы
+    cursor.execute("SELECT group_name, file_path FROM groups")
+    groups = cursor.fetchall()
+    print(f"Найдено {len(groups)} групп. Начинаем парсинг...")
+
+    # 3. Запись о запуске
+    cursor.execute("INSERT INTO parser_runs (start_time, status) VALUES (CURRENT_TIMESTAMP, 'running')")
+    run_id = cursor.lastrowid
+    conn.commit()
+
+    # 4. Очищаем schedule для новых данных
     cursor.execute("DELETE FROM schedule")
     conn.commit()
 
+    # 5. Парсим НОВОЕ расписание прямо в schedule
+    try:
+        for group_name, file_path in groups:
+            path = f"data/{file_path}"
+            for day in DAYS:
+                print(f"Парсим группу: {group_name} в {day}")
+                pandas_parser4fn.parse_and_save_schedule(conn, group_name, day, path, run_id, table_name="schedule")
+        
+        # 6. Проверяем результат
+        cursor.execute("SELECT COUNT(*) FROM schedule")
+        new_count = cursor.fetchone()[0]
+        
+        if new_count == 0:
+            print("❌ ОШИБКА: Расписание пустое! Откатываемся к снапшоту...")
+            cursor.execute("""
+                INSERT INTO schedule 
+                SELECT group_name, pair_number, day_of_week, subject, room 
+                FROM schedule_snapshot
+            """)
+            conn.commit()
+            cursor.execute("UPDATE parser_runs SET end_time = CURRENT_TIMESTAMP, status = 'error' WHERE id = ?", (run_id,))
+        else:
+            print(f"\n✅ Готово! Всего записей в БД: {new_count}")
+            cursor.execute("UPDATE parser_runs SET end_time = CURRENT_TIMESTAMP, status = 'success' WHERE id = ?", (run_id,))
+        
+        conn.commit()
 
-
-    # 1. Читаем все группы из БД
-    cursor.execute("SELECT group_name, file_path FROM groups")
-    groups = cursor.fetchall()  # Возвращает список кортежей: [('СА-371', 'raw_schedule7.html'), ...]
-    
-    # DEBUG
-    print(f"Найдено {len(groups)} групп. Начинаем парсинг...")
-
-    #1.1 инструкции для идеи, которая показывает, когда изменилось расписание
-    cursor.execute("INSERT INTO parser_runs (start_time, status) VALUES (CURRENT_TIMESTAMP, 'running')")
-    # забираем id
-    run_id = cursor.lastrowid
-
-    conn.commit()
-
-    # 2. двойной цикл, группа > дни
-    for group_name, file_path in groups:
-        path = f"data/{file_path}"
-        for day in DAYS:
-            print(f"Парсим группу: {group_name} в {day}")
-            pandas_parser4fn.parse_and_save_schedule(conn, group_name, day, path, run_id)
-
-    # для 1.1
-    # так как, run_id это переменная, то чтобы прога не искала run_id в parser_runs(ее там нет),
-    # мы делаем такую конструкцию ... WHERE id = ?", (run_id,). ? - как в f строке, run_id ставится на место вопроса
-    cursor.execute("UPDATE parser_runs SET end_time = CURRENT_TIMESTAMP, status = 'success' WHERE id = ?", (run_id,))
-
-    # 3 Коммит
-    conn.commit()
-
-    # 4. Проверка результата
-    cursor.execute("SELECT COUNT(*) FROM schedule")
-    total = cursor.fetchone()[0]
-    print(f"\n✅ Готово! Всего записей в БД: {total}")
+    except Exception as e:
+        print(f"\n❌ Ошибка парсинга: {e}")
+        print("Откатываемся к снапшоту...")
+        cursor.execute("""
+            INSERT INTO schedule 
+            SELECT group_name, pair_number, day_of_week, subject, room 
+            FROM schedule_snapshot
+        """)
+        conn.commit()
+        cursor.execute("UPDATE parser_runs SET end_time = CURRENT_TIMESTAMP, status = 'error' WHERE id = ?", (run_id,))
+        conn.commit()

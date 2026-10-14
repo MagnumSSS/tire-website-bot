@@ -1,6 +1,6 @@
 import pandas as pd
 
-def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id):
+def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id, table_name="schedule"):
     day_offsets = {
         "ПН": 1,
         "ВТ": 7,
@@ -98,8 +98,8 @@ def parse_and_save_schedule(conn, group_name, day_week, file_path, run_id):
             prev_subject = subject # и запоминаем предмет
         # print(f"  [INSERT] pair={pair}, subject='{data.iloc[1]}', room='{room}'")
 
-        cursor.execute("""
-            INSERT OR REPLACE INTO schedule 
+        cursor.execute(f"""
+            INSERT OR REPLACE INTO {table_name}
             (group_name, day_of_week, pair_number, subject, room, run_id) 
             VALUES (?, ?, ?, ?, ?, ?)
         """, (group_name, day_week, pair, subject, room, run_id))

@@ -22,6 +22,12 @@ while True:
     elif cursor.fetchone()[0] == 0:
         print(f"❌ Предмет '{subject}' не найден в raw таблице")
         continue
+    elif subject.startswith('delete '):
+        subj_to_delete = subject[7:]
+        cursor.execute("DELETE FROM distance_cabinets_raw WHERE subject = ?", (subj_to_delete,))
+        conn.commit()
+        print(f"🗑️ {subj_to_delete} удален из raw")
+        continue
     elif subject != "exit":
         cursor.execute("""
             INSERT OR REPLACE INTO distance_cabinets (subject, room_number)
