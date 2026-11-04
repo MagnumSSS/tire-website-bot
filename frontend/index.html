@@ -188,6 +188,8 @@
         .results-table th { background: rgba(255,255,255,0.05); font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
         .results-table tr:last-child td { border-bottom: none; }
         .results-table td { color: var(--white); }
+        .cell-muted { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 400; }
+        .search-count { color: var(--muted); font-size: 12px; margin-top: 15px; text-align: center; }
         
                 /* ======= ДИСТАНТЫ: проверенные и сырые таблицы ======= */
         .distance-block { margin-top: 25px; }
@@ -311,10 +313,26 @@
 
     <script>
         // ===================== CONFIG =====================
-        const API_BASE = '';
+        const API_BASE = 'http://localhost:8000';
         const DAY_TYPES = { 'ПН': 'monday', 'ВТ': 'weekday', 'СР': 'weekday', 'ЧТ': 'weekday', 'ПТ': 'weekday', 'СБ': 'saturday' };
         const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
         const EGG_CODE = 'Руслан_67'; // пасхалка для друга
+            // Код специальности -> название как на официальном сайте
+        // Если прилетит неизвестный код — фронт покажет сам код, не упадёт
+        const SPECIALTY_NAMES = {
+            '11.02.16': 'Монтаж, техническое обслуживание и ремонт электронных приборов и устройств',
+            '13.02.11-13': 'Техническая эксплуатация и обслуживание электрического и электромеханического оборудования (по отраслям) / Эксплуатация и обслуживание электрического и электромеханического оборудования (по отраслям)',
+            '15.01.05': 'Сварщик (ручной и частично механизированной сварки (наплавки))',
+            '15.02.03': 'Техническая эксплуатация гидравлических машин, гидроприводов и гидропневмоавтоматики / Монтаж, техническое обслуживание и ремонт гидравлического и пневматического оборудования (по отраслям)',
+            '15.02.05': 'Техническая эксплуатация оборудования в торговле и общественном питании',
+            '15.02.09': 'Аддитивные технологии',
+            '15.02.10': 'Мехатроника и мобильная робототехника (по отраслям) / Мехатроника и робототехника (по отраслям)',
+            '15.02.12-17': 'Монтаж, техническое обслуживание и ремонт промышленного оборудования (по отраслям) / Монтаж, техническое обслуживание, эксплуатация и ремонт промышленного оборудования (по отраслям)',
+            '15.02.14': 'Оснащение средствами автоматизации технологических процессов и производств (по отраслям)',
+            '22.02.06 - 15.02.19': 'Сварочное производство',
+            '27.02.07': 'Управление качеством продукции, процессов и услуг (по отраслям)',
+            'ОБЩ': 'Общеобразовательные дисциплины'
+        };
 
         // ===================== STATE =====================
         let currentGroup = localStorage.getItem('selectedGroup');
@@ -992,6 +1010,7 @@
                 <div class="tabs">
                     <button class="tab active" data-tab="rooms">Аудитории</button>
                     <button class="tab" data-tab="subjects">Предметы</button>
+                    <button class="tab" data-tab="teachers">Преподаватели</button>
                     <button class="tab" data-tab="bells">Звонки</button>
                     <button class="tab" data-tab="distance">Дистанты</button>
                 </div>
@@ -1033,6 +1052,24 @@
                     </div>
                     <button class="btn-primary" id="btnFindSubjects">Найти группы</button>
                     <div id="subjectsResult"></div>
+                </div>
+                <div class="tab-content" id="tab-teachers">
+                    <h2 class="tab-title">Преподаватели</h2>
+                    <p class="tab-description">Кто что преподаёт. Выбери специальность — подтянутся её предметы. Предмет необязателен: без него покажем все предметы специальности</p>
+                    <div class="form-group">
+                        <label class="form-label">Специальность</label>
+                        <select class="select-field" id="teacherSpecialty">
+                        <option value="">Загрузка...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Предмет (необязательно)</label>
+                        <select class="select-field" id="teacherSubject">
+                        <option value="">Все предметы</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="btnFindTeachers">Найти преподавателей</button>
+                    <div id="teachersResult"></div>
                 </div>
                 <div class="tab-content" id="tab-distance">
                     <h2 class="tab-title">Номера дистантов</h2>
@@ -1142,6 +1179,99 @@
                             </div>
                         `;
                     }
+                } catch (error) {
+                    result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
+                }
+            });
+            // ======= ПРЕПОДАВАТЕЛИ: специальность -> предмет (опционально) -> таблица =======
+            const specSelect = document.getElementById('teacherSpecialty');
+            const subjSelect = document.getElementById('teacherSubject');
+
+            // Каскад: сменил специальность — сбросились и подгрузились её предметы
+            const loadTeacherSubjects = async (specialty) => {
+                subjSelect.innerHTML = '<option value="">Все предметы</option>';
+                if (!specialty) return;
+                try {
+                    const response = await fetch(`${API_BASE}/api/teacher_subjects?specialty=${encodeURIComponent(specialty)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        (data.subjects || []).forEach(s => {
+                            const opt = document.createElement('option');
+                            opt.value = s;
+                            opt.textContent = s;
+                            subjSelect.appendChild(opt);
+                        });
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            };
+
+            // Сухие коды специальностей рисуем с человеческими названиями
+            (async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/teacher_specialties`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        specSelect.innerHTML = (data.specialties || [])
+                            .map(code => `<option value="${escapeHtml(code)}">${escapeHtml(code)} \u00b7 ${escapeHtml(SPECIALTY_NAMES[code] || 'название неизвестно')}</option>`)
+                            .join('');
+                        // сразу тянем предметы первой специальности, чтобы селект не был пустым
+                        loadTeacherSubjects(specSelect.value);
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            })();
+
+            specSelect.addEventListener('change', () => loadTeacherSubjects(specSelect.value));
+
+            document.getElementById('btnFindTeachers').addEventListener('click', async () => {
+                const specialty = specSelect.value;
+                const subject = subjSelect.value;
+                const result = document.getElementById('teachersResult');
+                if (!specialty) {
+                    result.innerHTML = '<div class="placeholder">Список специальностей не загрузился</div>';
+                    return;
+                }
+                let url = `${API_BASE}/api/teachers?specialty=${encodeURIComponent(specialty)}`;
+                if (subject) url += `&subject=${encodeURIComponent(subject)}`;
+                result.innerHTML = '<div class="placeholder"><span class="spinner"></span></div>';
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        result.innerHTML = '<div class="placeholder">Ничего не найдено</div>';
+                        return;
+                    }
+                    const data = await response.json();
+                    const list = data.teachers || [];
+                    if (list.length === 0) {
+                        result.innerHTML = '<div class="placeholder">Преподаватели не найдены</div>';
+                        return;
+                    }
+                    result.innerHTML = `
+                        <div class="search-count">Найдено: ${data.count ?? list.length}</div>
+                        <div class="results-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Преподаватель</th>
+                                        <th>Предмет</th>
+                                        <th>Специальность</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${list.map(t => `
+                                        <tr>
+                                            <td><strong>${escapeHtml(t.teacher_name)}</strong><span class="cell-muted">${escapeHtml(t.position || '')}</span></td>
+                                            <td>${escapeHtml(t.subject)}</td>
+                                            <td>${escapeHtml(t.specialty)}<span class="cell-muted">${escapeHtml(SPECIALTY_NAMES[t.specialty] || '')}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
                 } catch (error) {
                     result.innerHTML = '<div class="placeholder">Ошибка загрузки</div>';
                 }

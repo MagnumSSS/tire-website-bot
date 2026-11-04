@@ -71,6 +71,16 @@ def ini_db():
             );
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS teachers (
+                specialty   TEXT NOT NULL, 
+                subject     TEXT NOT NULL,
+                teacher_name TEXT NOT NULL,
+                position    TEXT,
+                UNIQUE(specialty, subject, teacher_name)
+            );
+        """)
+
         
 
         conn.commit()

@@ -431,6 +431,82 @@ def get_distance_number(
         "map": group_and_number
     }
 
+@app.get("/api/teachers")
+def get_teachers(
+    specialty: str = Query(..., description="Специальность"),
+    subject: Optional[str] = Query(None, description="Предмет (если нет — все предметы специальности)"),
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if subject:
+        cursor.execute("""
+            SELECT specialty, subject, teacher_name, position
+            FROM teachers
+            WHERE specialty = ? AND subject = ?
+            ORDER BY teacher_name ASC
+        """, (specialty, subject))
+    else:
+        cursor.execute("""
+            SELECT specialty, subject, teacher_name, position
+            FROM teachers
+            WHERE specialty = ?
+            ORDER BY subject ASC, teacher_name ASC
+        """, (specialty,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return {
+        "specialty": specialty,
+        "subject": subject,
+        "count": len(rows),
+        "teachers": [dict(row) for row in rows],
+    }
+
+@app.get("/api/teacher_specialties")
+def get_teacher_specialties():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # DISTINCT убирает дубликаты (у одной специальности много предметов)
+    cursor.execute("""
+        SELECT DISTINCT specialty 
+        FROM teachers 
+        ORDER BY specialty ASC
+    """)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Извлекаем только значения specialty из кортежей
+    specialties = [row["specialty"] for row in rows]
+    
+    return {"specialties": specialties}
+
+
+@app.get("/api/teacher_subjects")
+def get_teacher_subjects(
+    specialty: str = Query(..., description="Код специальности из первого селекта")
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT DISTINCT subject
+        FROM teachers
+        WHERE specialty = ?
+        ORDER BY subject ASC
+    """, (specialty,))   # ← запятая, брат, запятая
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return {
+        "specialty": specialty,
+        "subjects": [row["subject"] for row in rows],
+    }
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
