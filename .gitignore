@@ -5,3 +5,4 @@ venv/
 .env
 *.db
 monitor.env
+check_db.py

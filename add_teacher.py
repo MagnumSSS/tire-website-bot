@@ -2,6 +2,7 @@ import pdfplumber
 import requests
 import sqlite3
 import os
+import re
 
 standart_text = "https://www.ntmm.ru/institution/StrukturaOU/Педсостав/"
 
@@ -22,11 +23,29 @@ ls_addr = {
     "ОБЩ": f"{standart_text}общеобразовательный.pdf" # Метка для сортировки
 }
 
-# Функция очистки ячейки от мусора и переносов строк
+
 def clean_cell(cell):
     if cell is None:
         return ""
-    return str(cell).replace('\n', ' ').replace('\r', '').replace('  ', ' ').strip()
+    # split() и join() убирают все лишние пробелы и переносы строк
+    text = " ".join(str(cell).split())
+    # Убираем ТОЛЬКО запятые в конце, точки ОСТАВЛЯЕМ (они нужны для А.А.)
+    text = text.rstrip(',')
+    return text
+
+def fix_broken_words(text):
+    if not text:
+        return text
+    
+    # Паттерн 1: Склейка разорванных ФИО
+    # Теперь допускает отсутствие точки в конце или пробел между инициалами
+    # "Скоробогато ва А.А" или "Скоробогато ва А. А." -> "Скоробогатова А.А."
+    text = re.sub(r'([А-Яа-я]+)\s+([а-я]+)\s+([А-Я]\.?\s*[А-Я]\.?)', r'\1\2 \3', text)
+    
+    # Паттерн 2: Склейка разорванных слов в названиях (оставляем как было, он работает отлично)
+    text = re.sub(r'([А-Яа-я]{5,})\s+([а-я]{1,3})\b', lambda m: m.group(1) + m.group(2), text)
+    
+    return text
 
 # Подключаемся к БД
 os.makedirs('data/pdf', exist_ok=True)
@@ -72,7 +91,18 @@ for specialty_label, url in ls_addr.items():
             prev_subject = ""
             
             for page in pdf.pages:
-                tables = page.extract_tables()
+                tables = page.extract_tables(table_settings={
+                    "vertical_strategy": "lines",
+                    "horizontal_strategy": "lines",
+                    "snap_tolerance": 5,
+                    "join_tolerance": 3,
+                    "edge_min_length": 3,
+                    "min_words_vertical": 3,
+                    "min_words_horizontal": 1,
+                    "text_tolerance": 1,      # было 3 по умолчанию
+                    "text_x_tolerance": 1,
+                    "text_y_tolerance": 1,
+                })
                 for table in tables:
                     for row in table:
                         if not row:
@@ -93,27 +123,43 @@ for specialty_label, url in ls_addr.items():
                         if not header_found:
                             continue
                         
+        
                         
-                        # 3. Достаем данные (с проверкой на выход за границы списка)
-                        subject = clean_row[idx_subject] if idx_subject < len(clean_row) else ""
-                        teacher = clean_row[idx_name] if idx_name < len(clean_row) else ""
+                        subject = fix_broken_words(clean_row[idx_subject]) if idx_subject < len(clean_row) else ""
+                        teacher = fix_broken_words(clean_row[idx_name]) if idx_name < len(clean_row) else ""
                         position = clean_row[idx_position] if idx_position < len(clean_row) else ""
+
+                                                # ГЛУБОКИЙ ШПИОН: показываем всю строку, если поймали подозрительное слово
+                        if "Скоробогато" in teacher or "Абайдуленов" in teacher or "Материаловеде" in subject:
+                            print(f"🕵️ ПОЙМАЛ ПОДОЗРИТЕЛЬНОЕ!")
+                            print(f"   Subject: {repr(subject)}")
+                            print(f"   Teacher: {repr(teacher)}")
+                            print(f"   ВСЯ СТРОКА (clean_row): {clean_row}") # <-- ЭТО САМОЕ ВАЖНОЕ
+                            print("-" * 50)
+
+                        # ФИЛЬТР: если ФИО короткое (< 10 символов) и нет инициалов (точек) — это обрезок, скипаем
+                        # Если имя <= 11 символов (как "Скоробогато") и в нем нет точек (инициалов) — это мусорный обрывок
+                        if len(teacher) <= 11 and '.' not in teacher:
+                            continue
+                        # ФИЛЬТР: если ФИО начинается с маленькой буквы — это обрезок (вторая часть имени)
+                        if teacher and teacher[0].islower():
+                            continue
+                        # ФИЛЬТР: если ФИО состоит только из инициалов (типа "И.В.") — это обрезок
+                        if re.match(r'^[А-Я]\.[А-Я]\.?$', teacher):
+                            continue
+
                         
-                        # 4. Forward fill для предмета (если пустой - берем прошлый)
+
+                        # Forward fill для предмета
                         if not subject:
                             subject = prev_subject
                         else:
                             prev_subject = subject
-                            
-                        # Скипаем пустые строки
+
                         if not subject and not teacher:
                             continue
-                            
-                        # Защита от разбитых ФИО (типа "Е.В." без фамилии)
-                        if ' ' not in teacher and len(teacher) < 6:
-                            continue
-                            
-                        # 5. Сохраняем в БД
+
+                        # Сохраняем в БД
                         cursor.execute("""
                             INSERT OR REPLACE INTO teachers (specialty, subject, teacher_name, position)
                             VALUES (?, ?, ?, ?)
