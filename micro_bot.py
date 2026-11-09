@@ -7,7 +7,7 @@ from send_widget import generate_widget_html
 
 # Загружаем токен из твоего monitor.env
 load_dotenv('/opt/schedule/monitor.env')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+BOT_TOKEN = os.getenv('MONITOR_BOT_TOKEN')
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode=None) # parse_mode=None важен для виджетов!
 
