@@ -507,6 +507,53 @@ def get_teacher_subjects(
         "subjects": [row["subject"] for row in rows],
     }
 
+
+# ==========================================
+# HTML WIDGETS ENDPOINT
+# ==========================================
+import os
+import requests as tg_requests
+from dotenv import load_dotenv
+
+# Безопасная загрузка токена
+load_dotenv('/opt/schedule/monitor.env')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+try:
+    from send_widget import generate_widget_html
+except ImportError as e:
+    print(f"⚠️ Не удалось импортировать send_widget: {e}")
+    generate_widget_html = None
+
+@app.post("/api/send_widget")
+def send_widget_endpoint(user_id: int = Query(...), group: str = Query(...)):
+    if not BOT_TOKEN:
+        raise HTTPException(status_code=500, detail="BOT_TOKEN не настроен")
+    if not generate_widget_html:
+        raise HTTPException(status_code=500, detail="Модуль генерации виджетов недоступен")
+    
+    try:
+        html = generate_widget_html(group)
+        size_kb = len(html.encode('utf-8')) / 1024
+        
+        if size_kb > 32:
+            return {"ok": False, "error": f"Widget size {size_kb}KB exceeds 32KB limit"}
+            
+        resp = tg_requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendWidget",
+            json={
+                "chat_id": user_id, 
+                "html": html, 
+                "width": 0, 
+                "height": 0,
+                "caption": f"📅 Расписание {group}"
+            },
+            timeout=10
+        )
+        return {"ok": resp.json().get("ok", False), "detail": resp.json()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}

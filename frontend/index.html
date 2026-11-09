@@ -581,6 +581,7 @@
                 <div class="lessons" id="lessonsList"><div class="placeholder"><span class="spinner"></span></div></div>
                 <div id="snapshotControls"></div>
                 <div class="footer" id="footer">Обновлено: -</div>
+                <button class="btn-snapshot" id="btnSendWidget" style="margin-top: 10px;">Пришлите виджет в чат</button>
             `;
 
             document.getElementById('btnBack').addEventListener('click', () => {
@@ -590,6 +591,29 @@
             });
 
             document.getElementById('btnSearch').addEventListener('click', renderSearch);
+            document.getElementById('btnSendWidget').addEventListener('click', async () => {
+                const tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe
+                    ? window.Telegram.WebApp.initDataUnsafe.user?.id
+                    : null;
+                const btn = document.getElementById('btnSendWidget');
+                
+                if (!tgUser) {
+                    btn.textContent = 'Доступно только внутри Telegram';
+                    setTimeout(() => { btn.textContent = 'Пришлите виджет в чат'; }, 2500);
+                    return;
+                }
+                
+                btn.disabled = true;
+                btn.textContent = 'Отправляем...';
+                try {
+                    const res = await fetch(`${API_BASE}/api/send_widget?user_id=${tgUser}&group=${encodeURIComponent(currentGroup)}`, { method: 'POST' });
+                    const data = await res.json();
+                    btn.textContent = data.ok ? 'Отправлено! Проверь личку' : 'Ошибка отправки';
+                } catch (e) {
+                    btn.textContent = 'Ошибка отправки';
+                }
+                setTimeout(() => { btn.disabled = false; btn.textContent = 'Пришлите виджет в чат'; }, 2500);
+            });
             document.getElementById('statusBar').addEventListener('click', () => {
                 timerMode = timerMode === 'local' ? 'global' : 'local';
                 updateStatusBar();
@@ -1409,7 +1433,22 @@
         async function init() {
             await loadGroups();
             if (!currentDay) currentDay = 'ПН';
-            if (currentGroup) renderSchedule(); else renderGroupSelection();
+            
+            // Читаем start_param из Telegram WebApp (при открытии из виджета)
+            let startGroup = null;
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+                startGroup = window.Telegram.WebApp.initDataUnsafe.start_param || null;
+            }
+
+            if (startGroup && groups.includes(startGroup)) {
+                currentGroup = startGroup;
+                localStorage.setItem('selectedGroup', startGroup);
+                renderSchedule();
+            } else if (currentGroup) {
+                renderSchedule();
+            } else {
+                renderGroupSelection();
+            }
         }
 
         init();
