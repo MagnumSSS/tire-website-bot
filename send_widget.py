@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 # Загружаем токен из monitor.env (путь абсолютный, чтобы работало из systemd)
 load_dotenv('/opt/schedule/monitor.env')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+BOT_TOKEN = os.getenv('MONITOR_BOT_TOKEN')
 
 def get_schedule_for_day(group, day):
     conn = sqlite3.connect('/opt/schedule/data/schedule.db')
@@ -168,7 +168,7 @@ setInterval(()=>{if(view==='today')updateStatus(data.today,true);},30000);
 if __name__ == "__main__":
     print("⚠️ Тестовый запуск виджета...")
     # Замени на свой реальный ID и тестовую группу
-    TEST_CHAT_ID = "ТВОЙ_TELEGRAM_ID" 
+    TEST_CHAT_ID = "7665248215" 
     TEST_GROUP = "СА-371"
     
     if not BOT_TOKEN:
