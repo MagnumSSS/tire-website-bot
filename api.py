@@ -517,7 +517,7 @@ from dotenv import load_dotenv
 
 # Безопасная загрузка токена
 load_dotenv('/opt/schedule/monitor.env')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+BOT_TOKEN = os.getenv('MONITOR_BOT_TOKEN')
 
 try:
     from send_widget import generate_widget_html
