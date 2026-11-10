@@ -80,24 +80,6 @@ function switchDay(day) {
     updateStatus(lessons, today);
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchDay(t.dataset.day)));
-document.getElementById('openApp').addEventListener('click', () => {
-    // Берем группу из плейсхолдера, который подставил Python
-    const group = '{{GROUP_NAME}}';
-    
-    // Формируем строгую ссылку на Mini App (замени vibebunker_schedule_bot на реальный юзернейм, если он другой)
-    const deepLink = `https://t.me/vibebunker_schedule_bot/schedule?startapp=${encodeURIComponent(group)}`;
-    
-    console.log('Открываю ссылку:', deepLink); // Для отладки в консоли, если получится
-    
-    // Пытаемся открыть. _blank обязателен для песочницы
-    try {
-        window.open(deepLink, '_blank');
-    } catch (e) {
-        console.error('Не удалось открыть:', e);
-        // Фолбэк: если window.open заблокирован, покажем инструкцию
-        alert('Нажмите на кнопку "Открыть" в меню бота или перейдите по ссылке: t.me/vibebunker_schedule_bot/schedule');
-    }
-});
 switchDay('today');
 setInterval(()=>{if(view==='today')updateStatus(data.today,true);},30000);
 
