@@ -109,22 +109,6 @@ body { font-family: -apple-system, sans-serif; background: linear-gradient(180de
 </div>
 <div class="status" id="status">Загрузка...</div>
 <div class="lessons" id="list"></div>
-document.getElementById('openApp').addEventListener('click', (e) => {
-    e.preventDefault();
-    const group = '{{GROUP_NAME}}';
-    // Формируем прямую ссылку на Mini App с параметром startapp
-    const deepLink = `https://t.me/vibebunker_schedule_bot/schedule?startapp=${encodeURIComponent(group)}`;
-    
-    console.log('Попытка открыть:', deepLink);
-    
-    // Основной способ для виджетов
-    const newWindow = window.open(deepLink, '_blank');
-    
-    // Фолбэк: если браузер заблокировал всплывающее окно, пробуем редирект
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        window.location.href = deepLink;
-    }
-});
 <script>
 const data = {{SCHEDULE_JSON}};
 const times = {{PAIR_TIMES_JSON}};
