@@ -75,8 +75,8 @@ def handle_start(chat_id, user_id):
     group = get_group(user_id)
 
     if group:
-        # Постоянная клавиатура внизу — не скроллится, не теряется
-        persistent_keyboard = {
+        # Группа ЕСТЬ → нормальная клавиатура с «📅 Расписание»
+        keyboard = {
             "keyboard": [[{"text": WIDGET_BUTTON_TEXT}]],
             "resize_keyboard": True,
             "is_persistent": True,
@@ -84,22 +84,54 @@ def handle_start(chat_id, user_id):
         send_message(
             chat_id,
             f"👋 Привет! Твоя группа — {group}.\n"
-            f"Жми кнопку внизу, чтобы получить расписание на сегодня и завтра.",
-            persistent_keyboard,
+            f"Жми кнопку внизу — пришлю расписание.",
+            keyboard,
         )
     else:
-        # Группы ещё нет — ведём на сайт через web_app кнопку
-        keyboard = {
+        # Группы НЕТ → две кнопки: «Открыть сайт» (inline web_app) + «🔄 Проверить группу» (reply)
+        inline_keyboard = {
             "inline_keyboard": [[
                 {"text": "Открыть сайт", "web_app": {"url": WEBAPP_URL}}
             ]]
         }
+        # Сначала inline с web_app на сайт
         send_message(
             chat_id,
-            "Сначала открой сайт — я запомню твою группу. Потом жми кнопку здесь.",
-            keyboard,
+            "Сначала открой сайт — я запомню твою группу.\n"
+            "Как выберешь группу — вернись сюда и нажми 🔄 Проверить группу.",
+            inline_keyboard,
+        )
+        # Затем reply-клавиатура с «🔄 Проверить группу» (останется внизу)
+        reply_keyboard = {
+            "keyboard": [[{"text": "🔄 Проверить группу"}]],
+            "resize_keyboard": True,
+            "is_persistent": True,
+        }
+        send_message(
+            chat_id,
+            "Когда выберешь группу на сайте — жми кнопку внизу.",
+            reply_keyboard,
         )
 
+def handle_check_group(chat_id, user_id):
+    group = get_group(user_id)
+    if group:
+        # Группа появилась — шлём нормальную клавиатуру с «📅 Расписание»
+        keyboard = {
+            "keyboard": [[{"text": WIDGET_BUTTON_TEXT}]],
+            "resize_keyboard": True,
+            "is_persistent": True,
+        }
+        send_message(
+            chat_id,
+            f"✅ Вижу группу {group}. Жми кнопку внизу — пришлю расписание.",
+            keyboard,
+        )
+    else:
+        send_message(
+            chat_id,
+            "Пока не вижу группу. Открой сайт, выбери группу — и жми 🔄 снова.",
+        )
 
 def handle_widget_request(chat_id, user_id):
     """Общая логика на нажатие кнопки '📅 Расписание' и /widget."""
@@ -151,6 +183,8 @@ def main():
 
                     if text == "/start":
                         handle_start(chat_id, user_id)
+                    elif text == "🔄 Проверить группу":
+                        handle_check_group(chat_id, user_id)
                     elif text == "/widget":
                         handle_widget_request(chat_id, user_id)
                     elif text == WIDGET_BUTTON_TEXT:
