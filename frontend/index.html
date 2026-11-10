@@ -650,7 +650,11 @@
                     }
                 }, 100);
             });
-
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
+                const tgUser = window.Telegram.WebApp.initDataUnsafe.user.id;
+                fetch(`${API_BASE}/api/register_user?user_id=${tgUser}&group=${encodeURIComponent(currentGroup)}`, { method: 'POST' })
+                    .catch(() => {});
+            }
             loadFull();
             loadLastUpdate();
 

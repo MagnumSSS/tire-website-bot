@@ -81,6 +81,14 @@ def ini_db():
             );
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_groups (
+                user_id INTEGER PRIMARY KEY,
+                group_name TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        """)
+
         
 
         conn.commit()

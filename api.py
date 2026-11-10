@@ -554,6 +554,23 @@ def send_widget_endpoint(user_id: int = Query(...), group: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/api/register_user")
+def register_user(
+    user_id: int = Query(...),
+    group: str = Query(...)
+):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO user_groups (user_id, group_name, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+    """, (user_id, group))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
