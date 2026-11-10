@@ -148,6 +148,7 @@ function switchDay(day) {
     updateStatus(today ? data.today : data.tomorrow, today);
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchDay(t.dataset.day)));
+switchDay('today');
 setInterval(()=>{if(view==='today')updateStatus(data.today,true);},30000);
 </script>
 </body>
