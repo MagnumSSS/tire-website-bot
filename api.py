@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List
 from typing import Optional
+import requests as tg_requests
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -555,6 +556,8 @@ def send_widget_endpoint(user_id: int = Query(...), group: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+
 @app.post("/api/register_user")
 def register_user(
     user_id: int = Query(...),
@@ -562,12 +565,41 @@ def register_user(
 ):
     conn = get_db()
     cursor = conn.cursor()
+
+    # 1. Смотрим, была ли у пользователя группа раньше
+    cursor.execute("SELECT group_name FROM user_groups WHERE user_id = ?", (user_id,))
+    old = cursor.fetchone()
+    old_group = old["group_name"] if old else None
+
+    # 2. Сохраняем/обновляем группу
     cursor.execute("""
         INSERT OR REPLACE INTO user_groups (user_id, group_name, updated_at)
         VALUES (?, ?, CURRENT_TIMESTAMP)
     """, (user_id, group))
     conn.commit()
     conn.close()
+
+    # 3. Шлём кнопку в чат ТОЛЬКО при первой регистрации или смене группы
+    #    (иначе бот будет спамить при каждом заходе на сайт)
+    if BOT_TOKEN and old_group != group:
+        try:
+            persistent_keyboard = {
+                "keyboard": [[{"text": "📅 Расписание"}]],
+                "resize_keyboard": True,
+                "is_persistent": True,
+            }
+            tg_requests.post(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                json={
+                    "chat_id": user_id,
+                    "text": f"✅ Группа {group} сохранена. Жми кнопку внизу — пришлю расписание.",
+                    "reply_markup": persistent_keyboard,
+                },
+                timeout=10,
+            )
+        except Exception as e:
+            print(f"register_user notify err: {e}")
+
     return {"ok": True}
 
 
