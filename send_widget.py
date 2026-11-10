@@ -97,8 +97,6 @@ body { font-family: -apple-system, sans-serif; background: linear-gradient(180de
 .subject { font-size: 13px; font-weight: 600; text-align: center; line-height: 1.3; overflow-wrap: anywhere; }
 .room { background: linear-gradient(135deg, var(--violet), #6c5ce7); padding: 5px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; text-align: center; }
 .empty { text-align: center; padding: 30px 16px; color: var(--muted); font-size: 13px; background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
-.open-app { width: 100%; height: 44px; background: linear-gradient(135deg, var(--pink), var(--violet)); border: none; border-radius: 12px; color: var(--white); font-size: 13px; font-weight: 700; cursor: pointer; }
-.open-app:active { transform: scale(0.98); }
 </style>
 </head>
 <body>
@@ -111,7 +109,22 @@ body { font-family: -apple-system, sans-serif; background: linear-gradient(180de
 </div>
 <div class="status" id="status">Загрузка...</div>
 <div class="lessons" id="list"></div>
-<button class="open-app" id="openApp">Открыть полное расписание</button>
+document.getElementById('openApp').addEventListener('click', (e) => {
+    e.preventDefault();
+    const group = '{{GROUP_NAME}}';
+    // Формируем прямую ссылку на Mini App с параметром startapp
+    const deepLink = `https://t.me/vibebunker_schedule_bot/schedule?startapp=${encodeURIComponent(group)}`;
+    
+    console.log('Попытка открыть:', deepLink);
+    
+    // Основной способ для виджетов
+    const newWindow = window.open(deepLink, '_blank');
+    
+    // Фолбэк: если браузер заблокировал всплывающее окно, пробуем редирект
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        window.location.href = deepLink;
+    }
+});
 <script>
 const data = {{SCHEDULE_JSON}};
 const times = {{PAIR_TIMES_JSON}};
@@ -151,8 +164,6 @@ function switchDay(day) {
     updateStatus(today ? data.today : data.tomorrow, today);
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchDay(t.dataset.day)));
-document.getElementById('openApp').addEventListener('click',()=>{window.open('https://t.me/vibebunker_schedule_bot/schedule?startapp={{GROUP_NAME}}','_blank');});
-switchDay('today');
 setInterval(()=>{if(view==='today')updateStatus(data.today,true);},30000);
 </script>
 </body>
